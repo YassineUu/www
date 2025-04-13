@@ -213,6 +213,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Message de succès
             $orderSuccess = "Le statut de la commande #$orderId a été mis à jour avec succès.";
+            
+            // Rediriger vers la section des commandes
+            echo "<script>window.location.href = 'dashboard.php#orders';</script>";
         } catch (PDOException $e) {
             // Gérer l'erreur
             $orderError = "Erreur lors de la mise à jour du statut : " . $e->getMessage();
@@ -579,16 +582,14 @@ function formatStatus($status) {
                 <div class="modal-content">
                     <span class="close-modal">&times;</span>
                     <h2>Modifier le statut de la commande</h2>
-                    <form method="POST" action="dashboard.php#dashboard">
+                    <form method="POST" action="dashboard.php#orders">
                         <input type="hidden" id="order_id" name="order_id">
                         <div class="form-group">
                             <label for="status">Nouveau statut :</label>
                             <select name="status" id="status" class="form-control">
-                                <option value="en attente">En attente</option>
                                 <option value="confirmé">Confirmé</option>
                                 <option value="en préparation">En préparation</option>
                                 <option value="en livraison">En livraison</option>
-                                <option value="livré">Livré</option>
                                 <option value="annulé">Annulé</option>
                             </select>
                         </div>
@@ -822,4 +823,50 @@ function formatStatus($status) {
 include_once '../../includes/footer.php';
 ?>
 </body>
-</html> 
+</html>
+
+<script>
+// Script pour gérer le comportement de la modal de statut
+document.addEventListener('DOMContentLoaded', function() {
+    // Sélectionner tous les boutons de modification de statut
+    const statusButtons = document.querySelectorAll('.order-status-btn');
+    const modal = document.getElementById('status-modal');
+    const closeModal = document.querySelector('.close-modal');
+    const orderIdInput = document.getElementById('order_id');
+    const statusSelect = document.getElementById('status');
+    
+    // Ouvrir la modal quand on clique sur un bouton de statut
+    statusButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const currentStatus = this.getAttribute('data-status');
+            
+            // Définir l'ID de commande dans le formulaire
+            orderIdInput.value = orderId;
+            
+            // Sélectionner le statut actuel dans le menu déroulant
+            for (let i = 0; i < statusSelect.options.length; i++) {
+                if (statusSelect.options[i].value === currentStatus) {
+                    statusSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // Afficher la modal
+            modal.style.display = 'block';
+        });
+    });
+    
+    // Fermer la modal quand on clique sur le X
+    closeModal.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+    
+    // Fermer la modal si on clique en dehors
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+</script> 
