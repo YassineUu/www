@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 case 'livreur':
                     $tableName = 'Livreur';
                     $idColumn = 'id_livreur';
-                    $passwordColumn = 'telephone';
+                    $passwordColumn = 'mot_de_passe';
                     break;
                 case 'admin':
                     $tableName = 'Admin';
@@ -110,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     case 'livreur':
                                         $_SESSION['nom'] = $user['nom_l'] ?? '';
                                         $_SESSION['prenom'] = $user['prenom_l'] ?? '';
+                                        $_SESSION['telephone'] = $user['telephone'] ?? '';
                                         break;
                                     case 'admin':
                                         $_SESSION['nom'] = $user['nom'] ?? '';

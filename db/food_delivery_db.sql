@@ -34,7 +34,8 @@ CREATE TABLE Livreur (
     nom_l VARCHAR(50) NOT NULL,
     prenom_l VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    telephone VARCHAR(20) NOT NULL COMMENT 'Utilisé comme mot de passe',
+    telephone VARCHAR(20) NOT NULL,
+    mot_de_passe VARCHAR(255) NOT NULL,
     vehicule ENUM('scooter', 'velo', 'voiture') DEFAULT 'scooter',
     date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -134,10 +135,10 @@ INSERT INTO Restaurant (nom_r, adresse_r, description, email, contact) VALUES
 ('Pasta Fresca', '8 boulevard Saint-Germain, 75006 Paris', 'Pâtes fraîches et pizzas artisanales', 'contact@pastafresca.com', 'motdepasse123');
 
 -- Exemples de livreurs
-INSERT INTO Livreur (nom_l, prenom_l, email, telephone, vehicule) VALUES
-('Leroy', 'Marc', 'marc.leroy@exemple.com', '0612345678', 'scooter'),
-('Bernard', 'Julie', 'julie.bernard@exemple.com', '0687654321', 'velo'),
-('Petit', 'Thomas', 'thomas.petit@exemple.com', '0698765432', 'voiture');
+INSERT INTO Livreur (nom_l, prenom_l, email, telephone, mot_de_passe, vehicule) VALUES
+('Leroy', 'Marc', 'marc.leroy@exemple.com', '0612345678', 'motdepasse123', 'scooter'),
+('Bernard', 'Julie', 'julie.bernard@exemple.com', '0687654321', 'motdepasse123', 'velo'),
+('Petit', 'Thomas', 'thomas.petit@exemple.com', '0698765432', 'motdepasse123', 'voiture');
 
 -- Exemples de produits pour le restaurant Burger Palace (id_restaurant = 1)
 INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible) VALUES
