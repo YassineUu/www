@@ -1,0 +1,201 @@
+/* Fichier CSS spécifique pour l'interface administrateur */
+/* Dépend de common.css pour les variables et styles communs */
+
+/* Tableau de bord admin */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.admin-stat-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.admin-stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+}
+
+.admin-stat-icon.users {
+    background-color: rgba(52, 168, 83, 0.1);
+    color: var(--vert-frais);
+}
+
+.admin-stat-icon.restaurants {
+    background-color: rgba(244, 211, 94, 0.1);
+    color: var(--jaune-pastel);
+}
+
+.admin-stat-icon.orders {
+    background-color: rgba(45, 106, 79, 0.1);
+    color: var(--vert-fonce);
+}
+
+.admin-stat-icon.revenue {
+    background-color: rgba(33, 150, 243, 0.1);
+    color: var(--bleu-clair);
+}
+
+.admin-stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.admin-stat-label {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+/* Tableaux admin avancés */
+.admin-table-wrapper {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.admin-table-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--gris-moyen);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-table-title {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-dark);
+}
+
+.admin-table-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th, .admin-table td {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--gris-moyen);
+}
+
+.admin-table th {
+    background-color: var(--gris-clair);
+    font-weight: bold;
+    color: var(--text-light);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.admin-table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background-color: var(--gris-clair);
+}
+
+.admin-pagination {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-pagination-item {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border: 1px solid var(--gris-moyen);
+    transition: all 0.2s ease;
+}
+
+.admin-pagination-item:hover, .admin-pagination-item.active {
+    background-color: var(--vert-fonce);
+    color: white;
+    border-color: var(--vert-fonce);
+}
+
+/* Formulaires admin */
+.admin-form {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+}
+
+.admin-form-title {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-dark);
+    font-size: 1.25rem;
+    border-bottom: 1px solid var(--gris-moyen);
+    padding-bottom: 1rem;
+}
+
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.admin-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gris-moyen);
+}
+
+/* Responsive admin */
+@media screen and (max-width: 991px) {
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .admin-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .admin-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-table-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .admin-table-actions {
+        margin-top: 1rem;
+        width: 100%;
+        justify-content: space-between;
+    }
+} 

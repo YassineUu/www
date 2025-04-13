@@ -1,0 +1,224 @@
+/* Fichier CSS spécifique pour l'interface livreur */
+/* Dépend de common.css pour les variables et styles communs */
+
+/* Variables spécifiques livreur */
+:root {
+    --livreur-primary: var(--jaune-pastel);
+    --livreur-secondary: var(--blanc-pur);
+    --livreur-accent: var(--vert-frais);
+}
+
+/* Grilles spécifiques */
+.deliveries-grid, .orders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+/* Styles des cartes */
+.delivery-card, .order-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.delivery-card:hover, .order-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Styles spécifiques aux cartes de commande */
+.order-card {
+    border: 2px solid rgba(244, 211, 94, 0.3);
+}
+
+.order-card .btn-primary {
+    background-color: var(--jaune-pastel);
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.order-card .btn-primary:hover {
+    background-color: var(--vert-frais);
+    transform: scale(1.05);
+}
+
+/* En-têtes et sections des cartes */
+.delivery-header, .order-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--gris-moyen);
+}
+
+.delivery-id, .order-id {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.delivery-customer, .delivery-restaurant, .order-customer, .order-restaurant {
+    margin-bottom: 1rem;
+}
+
+.delivery-customer h3, .delivery-restaurant h3, .order-customer h3, .order-restaurant h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-light);
+}
+
+.delivery-customer p, .delivery-restaurant p, .order-customer p, .order-restaurant p,
+.delivery-details p, .order-details p {
+    margin: 0.25rem 0;
+}
+
+.delivery-details, .order-details {
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gris-moyen);
+}
+
+.delivery-actions, .order-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gris-moyen);
+}
+
+/* Alerte de commandes disponibles */
+.orders-available-alert {
+    display: flex;
+    align-items: center;
+    background-color: rgba(244, 211, 94, 0.1);
+    border: 1px solid rgba(244, 211, 94, 0.3);
+    border-left: 4px solid var(--jaune-pastel);
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 4px;
+    animation: pulse 2s infinite;
+}
+
+.orders-available-alert i {
+    font-size: 24px;
+    color: var(--jaune-pastel);
+    margin-right: 15px;
+}
+
+.orders-available-alert strong {
+    flex-grow: 1;
+    font-size: 16px;
+    color: var(--text-dark);
+}
+
+.orders-available-alert .btn {
+    background-color: var(--jaune-pastel);
+    color: var(--text-dark);
+    padding: 8px 15px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.orders-available-alert .btn:hover {
+    background-color: var(--vert-frais);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Animation de section */
+#available-orders {
+    animation: highlight-section 2s ease;
+}
+
+/* État vide */
+.empty-state {
+    background-color: var(--gris-clair);
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    margin: 20px 0;
+    border: 2px dashed var(--gris-moyen);
+}
+
+.empty-state i {
+    font-size: 60px;
+    color: #ccc;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.empty-state p {
+    font-size: 18px;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+}
+
+.empty-state-help {
+    font-size: 14px !important;
+    color: var(--text-lighter) !important;
+    margin-top: 10px;
+}
+
+/* Animations et effets */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(244, 211, 94, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(244, 211, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 211, 94, 0); }
+}
+
+@keyframes highlight-section {
+    0% { background-color: rgba(244, 211, 94, 0.1); }
+    100% { background-color: transparent; }
+}
+
+@keyframes highlightCard {
+    0%, 100% { box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+    50% { box-shadow: 0 0 20px rgba(76, 175, 80, 0.8); }
+}
+
+.highlight-card {
+    animation: highlightCard 2s ease;
+}
+
+/* Utilitaires */
+.status-select {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.btn-sm {
+    font-size: 14px;
+    padding: 5px 12px;
+}
+
+/* Responsive */
+@media screen and (max-width: 767px) {
+    .deliveries-grid, .orders-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Mise en page spécifique pour le dashboard livreur */
+.livreur-dashboard-container {
+    display: flex;
+    min-height: calc(100vh - 60px - 200px);
+    background-color: var(--gris-clair);
+    position: relative;
+}
+
+/* Ajustements pour les sections longues */
+.dashboard-content {
+    overflow: auto;
+    padding-bottom: 30px; /* Espace en bas pour éviter que le contenu touche le footer */
+}
+
+/* Assurer que le footer reste en bas */
+@media screen and (min-height: 800px) {
+    .dashboard-sidebar {
+        height: calc(100vh - 60px - 200px); /* Hauteur ajustée pour le footer */
+    }
+} 

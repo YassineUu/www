@@ -1,0 +1,180 @@
+/* Variables partagées pour toutes les interfaces */
+:root {
+    /* Couleurs primaires */
+    --vert-frais: #34A853;     /* Navbar */
+    --vert-doux: #A8D5BA;      /* Champs recherche */
+    --vert-fonce: #2D6A4F;     /* Éléments d'accent */
+    --jaune-pastel: #F4D35E;   /* Boutons */
+    --blanc-pur: #FAFAFA;      /* Arrière-plans */
+    
+    /* Couleurs secondaires pour livreur */
+    --vert-livreur: #4CAF50;
+    --vert-livreur-fonce: #388E3C;
+    --bleu-clair: #2196F3;
+    --bleu-fonce: #1976D2;
+    --bleu-tres-fonce: #0D47A1;
+    
+    /* Couleurs neutres */
+    --gris-clair: #f5f5f5;     /* Arrière-plan alternatif */
+    --gris-moyen: #e0e0e0;     /* Bordures */
+    --text-dark: #333333;      /* Texte principal */
+    --text-light: #666666;     /* Texte secondaire */
+    --text-lighter: #888888;   /* Texte tertiaire */
+    
+    /* Effets */
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Ombre standard */
+}
+
+/* Styles communs pour tous les dashboards */
+
+/* Animations et effets */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+}
+
+@keyframes highlight-section {
+    0% { background-color: rgba(76, 175, 80, 0.1); }
+    100% { background-color: transparent; }
+}
+
+@keyframes highlightCard {
+    0%, 100% { box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+    50% { box-shadow: 0 0 20px rgba(76, 175, 80, 0.8); }
+}
+
+/* État vide */
+.empty-state {
+    background-color: var(--gris-clair);
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    margin: 20px 0;
+    border: 2px dashed var(--gris-moyen);
+}
+
+.empty-state i {
+    font-size: 60px;
+    color: #ccc;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.empty-state p {
+    font-size: 18px;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+}
+
+.empty-state-help {
+    font-size: 14px !important;
+    color: var(--text-lighter) !important;
+    margin-top: 10px;
+}
+
+/* Status des commandes */
+.status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-pending {
+    background-color: rgba(244, 211, 94, 0.1);
+    color: var(--jaune-pastel);
+}
+
+.status-confirmed {
+    background-color: rgba(52, 168, 83, 0.1);
+    color: var(--vert-frais);
+}
+
+.status-delivered {
+    background-color: rgba(45, 106, 79, 0.1);
+    color: var(--vert-fonce);
+}
+
+.status-cancelled {
+    background-color: rgba(255, 99, 71, 0.1);
+    color: tomato;
+}
+
+/* Boutons d'action */
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon.edit {
+    background-color: rgba(244, 211, 94, 0.1);
+    color: var(--jaune-pastel);
+}
+
+.btn-icon.delete {
+    background-color: rgba(255, 99, 71, 0.1);
+    color: tomato;
+}
+
+.btn-icon.view {
+    background-color: rgba(52, 168, 83, 0.1);
+    color: var(--vert-frais);
+}
+
+.btn-icon:hover {
+    opacity: 0.8;
+}
+
+.btn-sm {
+    font-size: 14px;
+    padding: 5px 12px;
+}
+
+/* Utilitaires partagés */
+.status-select {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.highlight-card {
+    animation: highlightCard 2s ease;
+}
+
+/* Responsive commun */
+@media screen and (max-width: 767px) {
+    .deliveries-grid, .orders-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Styles pour le footer qui n'empiète pas sur la sidebar */
+footer {
+    clear: both;
+    position: relative;
+    z-index: 10;
+    min-height: 200px; /* Hauteur minimale du footer */
+    margin-top: auto; /* Pour pousser le footer en bas */
+    width: 100%;
+}
+
+/* Styles pour la navbar */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 60px; /* Hauteur de la navbar pour le calcul de la hauteur de sidebar */
+}
+
+/* Utilitaire pour corriger les problèmes d'empilement z-index */
+.z-top {
+    z-index: 1000;
+} 
