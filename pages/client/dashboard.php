@@ -279,7 +279,6 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Date</th>
                             <th>Montant</th>
                             <th>Statut</th>
@@ -289,13 +288,12 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($orders) === 0): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center;">Aucune commande trouvée.</td>
+                            <td colspan="4" style="text-align: center;">Aucune commande trouvée.</td>
                         </tr>
                         <?php else: ?>
                         
                         <?php foreach ($orders as $order): ?>
                         <tr>
-                            <td>#<?php echo $order['id_commande']; ?></td>
                             <td><?php echo date('d/m/Y H:i', strtotime($order['date'])); ?></td>
                             <td><?php echo number_format($order['montant'], 2); ?> €</td>
                             <td><?php echo formatStatus($order['statut']); ?></td>
@@ -332,7 +330,7 @@ function formatStatus($status) {
                 </div>
                 <?php endif; ?>
                 
-                <form method="POST" action="">
+                <form method="POST" action="dashboard.php#dashboard">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="nom">Nom :</label>
@@ -364,7 +362,7 @@ function formatStatus($status) {
             <div class="form-card" style="margin-top: 2rem;">
                 <h2>Changer mon mot de passe</h2>
                 
-                <form method="POST" action="">
+                <form method="POST" action="dashboard.php#dashboard">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="current_password">Mot de passe actuel :</label>
@@ -397,39 +395,81 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuLinks = document.querySelectorAll('.menu-items a');
     const sections = document.querySelectorAll('.dashboard-content section');
     
-    // Masquer toutes les sections sauf la première
-    sections.forEach((section, index) => {
-        if (index !== 0) {
+    // Fonction pour afficher une section spécifique par son ID
+    function showSection(targetId) {
+        console.log("Affichage de la section:", targetId);
+        
+        // Masquer toutes les sections
+        sections.forEach(section => {
             section.style.display = 'none';
+        });
+        
+        // Supprimer la classe active de tous les liens
+        menuLinks.forEach(menuLink => {
+            menuLink.classList.remove('active');
+        });
+        
+        // Afficher la section cible
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            
+            // Mettre à jour le lien actif dans le menu
+            const activeLink = document.querySelector(`.menu-items a[href="#${targetId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // Mettre à jour l'URL sans recharger la page
+            history.replaceState(null, null, `#${targetId}`);
         }
-    });
+    }
     
+    // Vérifier si un fragment existe dans l'URL
+    const hash = window.location.hash.substring(1);
+    if (hash && document.getElementById(hash)) {
+        // Si un fragment valide existe, afficher cette section
+        showSection(hash);
+    } else {
+        // Sinon, afficher la première section (tableau de bord)
+        showSection('dashboard');
+    }
+    
+    // Gestion de la navigation
     menuLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             // Si c'est un lien interne (avec #)
             if (this.getAttribute('href').startsWith('#')) {
                 e.preventDefault();
                 
-                // Supprimer la classe active de tous les liens
-                menuLinks.forEach(menuLink => {
-                    menuLink.classList.remove('active');
-                });
-                
-                // Ajouter la classe active au lien cliqué
-                this.classList.add('active');
-                
                 // Récupérer l'ID de la section à afficher
                 const targetId = this.getAttribute('href').substring(1);
                 
-                // Masquer toutes les sections
-                sections.forEach(section => {
-                    section.style.display = 'none';
-                });
+                // Afficher la section correspondante
+                showSection(targetId);
                 
-                // Afficher la section cible
-                document.getElementById(targetId).style.display = 'block';
+                // Scroll au début de la section
+                window.scrollTo(0, 0);
             }
         });
+    });
+    
+    // Gestion des formulaires - rediriger vers la bonne section après soumission
+    document.querySelectorAll('form').forEach(form => {
+        // Vérifier si le formulaire a déjà une action avec un fragment
+        const action = form.getAttribute('action') || '';
+        if (!action.includes('#')) {
+            // Ajouter le fragment dashboard pour rediriger vers l'accueil
+            form.setAttribute('action', `dashboard.php#dashboard`);
+        }
+    });
+    
+    // Écouter les changements d'URL pour mettre à jour la section active
+    window.addEventListener('hashchange', function() {
+        const newHash = window.location.hash.substring(1);
+        if (newHash && document.getElementById(newHash)) {
+            showSection(newHash);
+        }
     });
 });
 </script>

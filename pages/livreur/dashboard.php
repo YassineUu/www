@@ -10,6 +10,14 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role
 
 $livreurId = $_SESSION['user_id'];
 
+// Initialiser les variables pour les messages
+$profileSuccess = '';
+$profileError = '';
+$passwordSuccess = '';
+$passwordError = '';
+$orderSuccess = '';
+$orderError = '';
+
 // Récupérer les informations du livreur
 function getLivreurInfo($livreurId) {
     try {
@@ -27,21 +35,32 @@ function getLivreurInfo($livreurId) {
 function getCurrentDeliveries($livreurId) {
     try {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("SELECT c.*, cl.nom_c, cl.prenom_c, cl.adresse_c, r.nom_r, r.adresse_r, p.montant
+        $stmt = $conn->prepare("SELECT c.*, cl.nom_c, cl.prenom_c, cl.adresse_c, 
+                               (SELECT nom_r FROM Restaurant r WHERE r.id_restaurant = 
+                                  (SELECT DISTINCT p.id_restaurant FROM Produit p 
+                                   JOIN Contient co ON p.id_produit = co.id_produit 
+                                   WHERE co.id_commande = c.id_commande LIMIT 1)) as nom_r,
+                               (SELECT adresse_r FROM Restaurant r WHERE r.id_restaurant = 
+                                  (SELECT DISTINCT p.id_restaurant FROM Produit p 
+                                   JOIN Contient co ON p.id_produit = co.id_produit 
+                                   WHERE co.id_commande = c.id_commande LIMIT 1)) as adresse_r,
+                               p.montant
                                FROM Commande c 
                                JOIN Client cl ON c.id_client = cl.id_client
                                JOIN Paiement p ON c.id_commande = p.id_commande
-                               JOIN Contient co ON c.id_commande = co.id_commande
-                               JOIN Produit pr ON co.id_produit = pr.id_produit
-                               JOIN Restaurant r ON pr.id_restaurant = r.id_restaurant
                                WHERE c.id_livreur = :livreurId 
                                AND c.statut IN ('confirmé', 'en préparation', 'en livraison')
-                               GROUP BY c.id_commande
                                ORDER BY c.date DESC");
+        
         $stmt->bindParam(':livreurId', $livreurId);
         $stmt->execute();
+        
+        // Log pour debug
+        echo "<!-- Nombre de livraisons en cours: " . $stmt->rowCount() . " -->";
+        
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
+        echo "<!-- Erreur livraisons en cours: " . $e->getMessage() . " -->";
         return [];
     }
 }
@@ -122,20 +141,31 @@ function calculateTotalEarnings($livreurId) {
 function getAvailableOrders() {
     try {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("SELECT c.*, cl.nom_c, cl.prenom_c, cl.adresse_c, r.nom_r, r.adresse_r, p.montant
+        // Modifié pour prendre toutes les commandes en attente ou confirmées sans livreur
+        $stmt = $conn->prepare("SELECT DISTINCT c.*, cl.nom_c, cl.prenom_c, cl.adresse_c, 
+                               (SELECT nom_r FROM Restaurant r WHERE r.id_restaurant = 
+                                  (SELECT DISTINCT p.id_restaurant FROM Produit p 
+                                   JOIN Contient co ON p.id_produit = co.id_produit 
+                                   WHERE co.id_commande = c.id_commande LIMIT 1)) as nom_r,
+                               (SELECT adresse_r FROM Restaurant r WHERE r.id_restaurant = 
+                                  (SELECT DISTINCT p.id_restaurant FROM Produit p 
+                                   JOIN Contient co ON p.id_produit = co.id_produit 
+                                   WHERE co.id_commande = c.id_commande LIMIT 1)) as adresse_r,
+                               p.montant
                                FROM Commande c 
                                JOIN Client cl ON c.id_client = cl.id_client
                                JOIN Paiement p ON c.id_commande = p.id_commande
-                               JOIN Contient co ON c.id_commande = co.id_commande
-                               JOIN Produit pr ON co.id_produit = pr.id_produit
-                               JOIN Restaurant r ON pr.id_restaurant = r.id_restaurant
                                WHERE c.id_livreur IS NULL
-                               AND c.statut = 'confirmé'
-                               GROUP BY c.id_commande
+                               AND (c.statut = 'confirmé' OR c.statut = 'en attente')
                                ORDER BY c.date DESC");
         $stmt->execute();
+        
+        // Log pour debug
+        echo "<!-- Nombre de commandes disponibles: " . $stmt->rowCount() . " -->";
+        
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
+        echo "<!-- Erreur: " . $e->getMessage() . " -->";
         return [];
     }
 }
@@ -149,6 +179,19 @@ $totalDeliveries = countTotalDeliveries($livreurId);
 $todayDeliveries = countTodayDeliveries($livreurId);
 $totalEarnings = calculateTotalEarnings($livreurId);
 
+// Debug des commandes
+echo "<!-- Debug des commandes du livreur #$livreurId -->";
+echo "<!-- Commandes en cours: " . count($currentDeliveries) . " -->";
+echo "<!-- Commandes disponibles: " . count($availableOrders) . " -->";
+echo "<!-- Commandes complétées: " . count($completedDeliveries) . " -->";
+
+// Afficher les IDs des commandes en cours pour débug
+echo "<!-- IDs des commandes en cours: ";
+foreach ($currentDeliveries as $delivery) {
+    echo $delivery['id_commande'] . " (statut: " . $delivery['statut'] . "), ";
+}
+echo " -->";
+
 // Traiter l'acceptation d'une commande
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['accept_order'])) {
@@ -161,11 +204,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bindParam(':orderId', $orderId);
             $stmt->execute();
             
-            // Rediriger pour éviter le repost
-            header('Location: ' . $_SERVER['PHP_SELF']);
-            exit;
+            $conn->beginTransaction();
+            
+            // Vérifier le statut actuel de la commande
+            $stmt = $conn->prepare("SELECT statut FROM Commande WHERE id_commande = :orderId");
+            $stmt->bindParam(':orderId', $orderId);
+            $stmt->execute();
+            $commande = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Si la commande est en attente, la passer en préparation d'abord
+            if ($commande['statut'] === 'en attente') {
+                $stmt = $conn->prepare("UPDATE Commande SET id_livreur = :livreurId, statut = 'en préparation' WHERE id_commande = :orderId");
+            } else {
+                // Sinon la passer directement en livraison
+                $stmt = $conn->prepare("UPDATE Commande SET id_livreur = :livreurId, statut = 'en livraison' WHERE id_commande = :orderId");
+            }
+            
+            $stmt->bindParam(':livreurId', $livreurId);
+            $stmt->bindParam(':orderId', $orderId);
+            $stmt->execute();
+            
+            $conn->commit();
+            
+            if ($commande['statut'] === 'en attente') {
+                $orderSuccess = "Vous avez accepté la commande #$orderId. Son statut est maintenant 'en préparation'.";
+            } else {
+                $orderSuccess = "Vous avez accepté la commande #$orderId. Son statut est maintenant 'en livraison'.";
+            }
+            
+            // Rafraîchir les données
+            $currentDeliveries = getCurrentDeliveries($livreurId);
+            $availableOrders = getAvailableOrders();
         } catch (PDOException $e) {
-            // Gérer l'erreur
+            $orderError = "Erreur lors de l'acceptation de la commande : " . $e->getMessage();
         }
     }
     
@@ -182,11 +253,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bindParam(':livreurId', $livreurId);
             $stmt->execute();
             
-            // Rediriger pour éviter le repost
-            header('Location: ' . $_SERVER['PHP_SELF']);
-            exit;
+            $orderSuccess = "Le statut de la commande #$orderId a été mis à jour avec succès.";
+            
+            // Rafraîchir les données
+            $currentDeliveries = getCurrentDeliveries($livreurId);
+            $completedDeliveries = getCompletedDeliveries($livreurId);
+            $totalDeliveries = countTotalDeliveries($livreurId);
+            $todayDeliveries = countTodayDeliveries($livreurId);
+            $totalEarnings = calculateTotalEarnings($livreurId);
         } catch (PDOException $e) {
-            // Gérer l'erreur
+            $orderError = "Erreur lors de la mise à jour du statut : " . $e->getMessage();
+        }
+    }
+    
+    // Traiter la mise à jour du profil
+    if (isset($_POST['update_profile'])) {
+        $nom = trim($_POST['nom']);
+        $prenom = trim($_POST['prenom']);
+        $email = trim($_POST['email']);
+        $telephone = trim($_POST['telephone']);
+        $vehicule = $_POST['vehicule'];
+        
+        // Validation basique
+        if (empty($nom) || empty($prenom) || empty($email) || empty($telephone)) {
+            $profileError = 'Veuillez remplir tous les champs obligatoires.';
+        } else {
+            try {
+                $conn = getDbConnection();
+                $stmt = $conn->prepare("UPDATE Livreur SET nom_l = :nom, prenom_l = :prenom, email = :email, telephone = :telephone, vehicule = :vehicule WHERE id_livreur = :id");
+                $stmt->bindParam(':nom', $nom);
+                $stmt->bindParam(':prenom', $prenom);
+                $stmt->bindParam(':email', $email);
+                $stmt->bindParam(':telephone', $telephone);
+                $stmt->bindParam(':vehicule', $vehicule);
+                $stmt->bindParam(':id', $livreurId);
+                $stmt->execute();
+                
+                $profileSuccess = 'Votre profil a été mis à jour avec succès.';
+                
+                // Rafraîchir les informations du livreur
+                $livreur = getLivreurInfo($livreurId);
+            } catch (PDOException $e) {
+                $profileError = "Erreur lors de la mise à jour du profil : " . $e->getMessage();
+            }
+        }
+    }
+    
+    // Traiter le changement de mot de passe
+    if (isset($_POST['update_password'])) {
+        $currentPassword = $_POST['current_password'];
+        $newPassword = $_POST['new_password'];
+        $confirmPassword = $_POST['confirm_password'];
+        
+        // Validation basique
+        if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
+            $passwordError = 'Veuillez remplir tous les champs.';
+        } elseif ($newPassword !== $confirmPassword) {
+            $passwordError = 'Les nouveaux mots de passe ne correspondent pas.';
+        } elseif (strlen($newPassword) < 6) {
+            $passwordError = 'Le nouveau mot de passe doit contenir au moins 6 caractères.';
+        } else {
+            try {
+                $conn = getDbConnection();
+                
+                // Vérifier le mot de passe actuel
+                $stmt = $conn->prepare("SELECT mot_de_passe FROM Livreur WHERE id_livreur = :id");
+                $stmt->bindParam(':id', $livreurId);
+                $stmt->execute();
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (password_verify($currentPassword, $user['mot_de_passe'])) {
+                    // Hasher le nouveau mot de passe
+                    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                    
+                    // Mettre à jour le mot de passe
+                    $stmt = $conn->prepare("UPDATE Livreur SET mot_de_passe = :password WHERE id_livreur = :id");
+                    $stmt->bindParam(':password', $hashedPassword);
+                    $stmt->bindParam(':id', $livreurId);
+                    $stmt->execute();
+                    
+                    $passwordSuccess = 'Votre mot de passe a été mis à jour avec succès.';
+                } else {
+                    $passwordError = 'Le mot de passe actuel est incorrect.';
+                }
+            } catch (PDOException $e) {
+                $passwordError = "Erreur lors de la mise à jour du mot de passe : " . $e->getMessage();
+            }
         }
     }
 }
@@ -275,10 +427,30 @@ function formatStatus($status) {
     <!-- Contenu principal -->
     <div class="dashboard-content">
         <!-- Section Tableau de bord -->
-        <section id="dashboard">
+        <section id="dashboard" class="active-section">
             <div class="content-header">
                 <h1>Tableau de bord</h1>
-                <p>Bienvenue, <?php echo htmlspecialchars($livreur['prenom_l']); ?> ! Voici un résumé de votre activité.</p>
+                <p>Bienvenue, <?php echo $livreur['prenom_l']; ?>. Voici votre activité récente.</p>
+                
+                <?php if (!empty($orderSuccess)): ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> <?php echo $orderSuccess; ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if (!empty($orderError)): ?>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo $orderError; ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if (count($availableOrders) > 0): ?>
+                <div class="alert alert-info orders-available-alert">
+                    <i class="fas fa-bell"></i> 
+                    <strong><?php echo count($availableOrders); ?> commande(s) disponible(s) en attente de livreur !</strong> 
+                    <a href="#available-orders" class="btn btn-sm">Voir les commandes</a>
+                </div>
+                <?php endif; ?>
             </div>
             
             <div class="info-cards">
@@ -335,7 +507,6 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Client</th>
                             <th>Restaurant</th>
                             <th>Statut</th>
@@ -345,7 +516,7 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($currentDeliveries) === 0): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center;">Aucune livraison en cours.</td>
+                            <td colspan="4" style="text-align: center;">Aucune livraison en cours.</td>
                         </tr>
                         <?php else: ?>
                         
@@ -354,7 +525,6 @@ function formatStatus($status) {
                         foreach ($displayedDeliveries as $delivery): 
                         ?>
                         <tr>
-                            <td>#<?php echo $delivery['id_commande']; ?></td>
                             <td><?php echo htmlspecialchars($delivery['prenom_c'] . ' ' . $delivery['nom_c']); ?></td>
                             <td><?php echo htmlspecialchars($delivery['nom_r']); ?></td>
                             <td><?php echo formatStatus($delivery['statut']); ?></td>
@@ -385,7 +555,6 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Client</th>
                             <th>Restaurant</th>
                             <th>Montant</th>
@@ -395,7 +564,7 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($availableOrders) === 0): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center;">Aucune commande disponible pour livraison.</td>
+                            <td colspan="4" style="text-align: center;">Aucune commande disponible pour le moment.</td>
                         </tr>
                         <?php else: ?>
                         
@@ -404,7 +573,6 @@ function formatStatus($status) {
                         foreach ($displayedOrders as $order): 
                         ?>
                         <tr>
-                            <td>#<?php echo $order['id_commande']; ?></td>
                             <td><?php echo htmlspecialchars($order['prenom_c'] . ' ' . $order['nom_c']); ?></td>
                             <td><?php echo htmlspecialchars($order['nom_r']); ?></td>
                             <td><?php echo number_format($order['montant'], 2); ?> €</td>
@@ -447,6 +615,16 @@ function formatStatus($status) {
                     <i class="fas fa-motorcycle"></i>
                     <p>Vous n'avez pas de livraisons en cours.</p>
                     <a href="#available-orders" class="btn btn-primary">Voir les commandes disponibles</a>
+                    
+                    <div class="debug-info" style="margin-top: 20px; text-align: left; font-size: 14px; color: #777; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                        <p>Informations de diagnostic:</p>
+                        <ul>
+                            <li>ID Livreur: <?php echo $livreurId; ?></li>
+                            <li>Commandes en cours: <?php echo count($currentDeliveries); ?></li>
+                            <li>Commandes disponibles: <?php echo count($availableOrders); ?></li>
+                        </ul>
+                        <p>Si vous voyez des commandes "en livraison" dans l'administration mais pas ici, veuillez contacter le support technique.</p>
+                    </div>
                 </div>
                 <?php else: ?>
                 
@@ -510,6 +688,7 @@ function formatStatus($status) {
                 <div class="empty-state">
                     <i class="fas fa-bell-slash"></i>
                     <p>Aucune commande disponible pour le moment.</p>
+                    <p class="empty-state-help">Les commandes confirmées par les restaurants apparaîtront ici.<br>Revenez vérifier dans quelques minutes.</p>
                 </div>
                 <?php else: ?>
                 
@@ -567,7 +746,6 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Date</th>
                             <th>Client</th>
                             <th>Montant</th>
@@ -577,13 +755,12 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($completedDeliveries) === 0): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center;">Aucune livraison terminée.</td>
+                            <td colspan="4" style="text-align: center;">Aucune livraison terminée.</td>
                         </tr>
                         <?php else: ?>
                         
                         <?php foreach ($completedDeliveries as $delivery): ?>
                         <tr>
-                            <td>#<?php echo $delivery['id_commande']; ?></td>
                             <td><?php echo date('d/m/Y H:i', strtotime($delivery['date'])); ?></td>
                             <td><?php echo htmlspecialchars($delivery['prenom_c'] . ' ' . $delivery['nom_c']); ?></td>
                             <td><?php echo number_format($delivery['montant'], 2); ?> €</td>
@@ -607,7 +784,19 @@ function formatStatus($status) {
             <div class="form-card">
                 <h2>Informations personnelles</h2>
                 
-                <form method="POST" action="">
+                <?php if (!empty($profileSuccess)): ?>
+                <div class="alert alert-success">
+                    <?php echo $profileSuccess; ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if (!empty($profileError)): ?>
+                <div class="alert alert-danger">
+                    <?php echo $profileError; ?>
+                </div>
+                <?php endif; ?>
+                
+                <form method="POST" action="dashboard.php#dashboard">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="nom">Nom :</label>
@@ -648,7 +837,19 @@ function formatStatus($status) {
             <div class="form-card" style="margin-top: 2rem;">
                 <h2>Changer mon mot de passe</h2>
                 
-                <form method="POST" action="">
+                <?php if (!empty($passwordSuccess)): ?>
+                <div class="alert alert-success">
+                    <?php echo $passwordSuccess; ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if (!empty($passwordError)): ?>
+                <div class="alert alert-danger">
+                    <?php echo $passwordError; ?>
+                </div>
+                <?php endif; ?>
+                
+                <form method="POST" action="dashboard.php#dashboard">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="current_password">Mot de passe actuel :</label>
@@ -737,23 +938,60 @@ function formatStatus($status) {
 }
 
 .empty-state {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 40px 20px;
     text-align: center;
-    padding: 3rem 1.5rem;
+    margin: 20px 0;
+    border: 2px dashed #ddd;
 }
 
 .empty-state i {
-    font-size: 3rem;
-    color: var(--gris-moyen);
-    margin-bottom: 1rem;
+    font-size: 60px;
+    color: #ccc;
+    margin-bottom: 20px;
+    display: block;
 }
 
 .empty-state p {
-    margin-bottom: 1.5rem;
-    color: var(--text-light);
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 10px;
 }
 
-.accept-form {
-    display: inline-block;
+.empty-state-help {
+    font-size: 14px !important;
+    color: #888 !important;
+    margin-top: 10px;
+}
+
+#available-orders {
+    animation: highlight-section 2s ease;
+}
+
+@keyframes highlight-section {
+    0% { background-color: rgba(76, 175, 80, 0.1); }
+    100% { background-color: transparent; }
+}
+
+.order-card {
+    border: 2px solid rgba(76, 175, 80, 0.3);
+}
+
+.order-card .btn-primary {
+    background-color: #4CAF50;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.order-card .btn-primary:hover {
+    background-color: #388E3C;
+    transform: scale(1.05);
+}
+
+.delivery-card:hover, .order-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive */
@@ -761,6 +999,66 @@ function formatStatus($status) {
     .deliveries-grid, .orders-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.orders-available-alert {
+    display: flex;
+    align-items: center;
+    background-color: #E3F2FD;
+    border: 1px solid #BBDEFB;
+    border-left: 4px solid #2196F3;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 4px;
+    animation: pulse 2s infinite;
+}
+
+.orders-available-alert i {
+    font-size: 24px;
+    color: #2196F3;
+    margin-right: 15px;
+}
+
+.orders-available-alert strong {
+    flex-grow: 1;
+    font-size: 16px;
+    color: #0D47A1;
+}
+
+.orders-available-alert .btn {
+    background-color: #2196F3;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.orders-available-alert .btn:hover {
+    background-color: #1976D2;
+    transform: scale(1.05);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+}
+
+.btn-sm {
+    font-size: 14px;
+    padding: 5px 12px;
+}
+
+.highlight-card {
+    animation: highlightCard 2s ease;
+}
+
+@keyframes highlightCard {
+    0%, 100% { box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+    50% { box-shadow: 0 0 20px rgba(76, 175, 80, 0.8); }
 }
 </style>
 
@@ -770,12 +1068,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuLinks = document.querySelectorAll('.menu-items a');
     const sections = document.querySelectorAll('.dashboard-content section');
     
-    // Masquer toutes les sections sauf la première
-    sections.forEach((section, index) => {
-        if (index !== 0) {
+    // Fonction pour afficher une section spécifique par son ID
+    function showSection(targetId) {
+        console.log("Affichage de la section:", targetId);
+        
+        // Masquer toutes les sections
+        sections.forEach(section => {
             section.style.display = 'none';
+        });
+        
+        // Supprimer la classe active de tous les liens
+        menuLinks.forEach(menuLink => {
+            menuLink.classList.remove('active');
+        });
+        
+        // Afficher la section cible
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            
+            // Mettre à jour le lien actif dans le menu
+            const activeLink = document.querySelector(`.menu-items a[href="#${targetId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // Mettre à jour l'URL sans recharger la page
+            history.replaceState(null, null, `#${targetId}`);
         }
-    });
+    }
+    
+    // Vérifier si un fragment existe dans l'URL
+    const hash = window.location.hash.substring(1);
+    if (hash && document.getElementById(hash)) {
+        // Si un fragment valide existe, afficher cette section
+        showSection(hash);
+    } else {
+        // Sinon, afficher la première section (tableau de bord)
+        showSection('dashboard');
+    }
     
     // Gestion de la navigation
     menuLinks.forEach(link => {
@@ -784,26 +1115,67 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.getAttribute('href').startsWith('#')) {
                 e.preventDefault();
                 
-                // Supprimer la classe active de tous les liens
-                menuLinks.forEach(menuLink => {
-                    menuLink.classList.remove('active');
-                });
-                
-                // Ajouter la classe active au lien cliqué
-                this.classList.add('active');
-                
                 // Récupérer l'ID de la section à afficher
                 const targetId = this.getAttribute('href').substring(1);
                 
-                // Masquer toutes les sections
-                sections.forEach(section => {
-                    section.style.display = 'none';
-                });
+                // Afficher la section correspondante
+                showSection(targetId);
                 
-                // Afficher la section cible
-                document.getElementById(targetId).style.display = 'block';
+                // Scroll au début de la section
+                window.scrollTo(0, 0);
             }
         });
+    });
+    
+    // Gestion des boutons de visualisation (icônes d'œil)
+    document.querySelectorAll('.delivery-details-btn, .order-details-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Récupérer l'ID cible du bouton
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                // Déterminer quelle section principale afficher
+                if (targetId.startsWith('delivery-')) {
+                    // C'est une livraison en cours, donc afficher la section des livraisons
+                    showSection('current-deliveries');
+                } else if (targetId.startsWith('order-')) {
+                    // C'est une commande disponible, donc afficher la section des commandes
+                    showSection('available-orders');
+                }
+                
+                // Scroll jusqu'à l'élément
+                setTimeout(() => {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Mettre en évidence l'élément
+                    targetElement.classList.add('highlight-card');
+                    setTimeout(() => {
+                        targetElement.classList.remove('highlight-card');
+                    }, 2000);
+                }, 300);
+            }
+        });
+    });
+    
+    // Gestion des formulaires - rediriger vers la bonne section après soumission
+    document.querySelectorAll('form').forEach(form => {
+        // Vérifier si le formulaire a déjà une action avec un fragment
+        const action = form.getAttribute('action') || '';
+        if (!action.includes('#')) {
+            // Ajouter le fragment dashboard pour rediriger vers l'accueil
+            form.setAttribute('action', `dashboard.php#dashboard`);
+        }
+    });
+    
+    // Écouter les changements d'URL pour mettre à jour la section active
+    window.addEventListener('hashchange', function() {
+        const newHash = window.location.hash.substring(1);
+        if (newHash && document.getElementById(newHash)) {
+            showSection(newHash);
+        }
     });
 });
 </script>

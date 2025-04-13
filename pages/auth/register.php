@@ -72,12 +72,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($stmt->rowCount() > 0) {
                         $error = 'Cet email est déjà utilisé.';
                     } else {
+                        // Vérifier si le champ password existe dans la table Restaurant
+                        $stmt = $conn->prepare("SHOW COLUMNS FROM Restaurant LIKE 'password'");
+                        $stmt->execute();
+                        
+                        // Si le champ n'existe pas, nous l'ajoutons
+                        if ($stmt->rowCount() == 0) {
+                            $stmt = $conn->prepare("ALTER TABLE Restaurant ADD COLUMN password VARCHAR(255) NULL AFTER email");
+                            $stmt->execute();
+                        }
+                        
+                        // Générer un numéro de contact aléatoire pour éviter d'utiliser le mot de passe
+                        $contactNumber = '0' . rand(600000000, 799999999);
+                        
                         // Insérer le nouveau restaurant
-                        $stmt = $conn->prepare("INSERT INTO Restaurant (nom_r, adresse_r, email, contact) VALUES (:nom, :adresse, :email, :password)");
+                        $stmt = $conn->prepare("INSERT INTO Restaurant (nom_r, adresse_r, email, contact, password) VALUES (:nom, :adresse, :email, :contact, :password)");
                         $stmt->bindParam(':nom', $nom);
                         $stmt->bindParam(':adresse', $adresse);
                         $stmt->bindParam(':email', $email);
-                        $stmt->bindParam(':password', $hashedPassword); // Utilisez le mot de passe haché dans le champ contact
+                        $stmt->bindParam(':contact', $contactNumber);
+                        $stmt->bindParam(':password', $hashedPassword); // Utiliser le mot de passe haché dans le champ password
                         $stmt->execute();
                         
                         $success = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';

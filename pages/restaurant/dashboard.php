@@ -49,11 +49,11 @@ function getRestaurantOrders($restaurantId, $limit = 10) {
 function getRestaurantProducts($restaurantId) {
     try {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("SELECT p.*, c.nom_categorie 
+        $stmt = $conn->prepare("SELECT p.*, c.nom as nom_categorie 
                                FROM Produit p 
                                JOIN Categorie c ON p.id_categorie = c.id_categorie 
                                WHERE p.id_restaurant = :restaurantId
-                               ORDER BY c.nom_categorie, p.nom_p");
+                               ORDER BY c.nom, p.nom");
         $stmt->bindParam(':restaurantId', $restaurantId);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -133,9 +133,15 @@ $totalOrders = countRestaurantOrders($restaurantId);
 $totalSales = getTotalSales($restaurantId);
 $totalProducts = countProducts($restaurantId);
 
-// Traiter l'ajout/modification de produit
+// Initialiser les variables pour les messages
 $productSuccess = '';
 $productError = '';
+$orderSuccess = '';
+$orderError = '';
+$profileSuccess = '';
+$profileError = '';
+$passwordSuccess = '';
+$passwordError = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Traiter l'ajout d'un produit
@@ -151,8 +157,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $conn = getDbConnection();
-                $stmt = $conn->prepare("INSERT INTO Produit (id_restaurant, id_categorie, nom_p, prix, description_c) 
-                                       VALUES (:restaurantId, :categorieId, :nom, :prix, :description)");
+                $stmt = $conn->prepare("INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible) 
+                                       VALUES (:restaurantId, :categorieId, :nom, :description, :prix, TRUE)");
                 $stmt->bindParam(':restaurantId', $restaurantId);
                 $stmt->bindParam(':categorieId', $categorie);
                 $stmt->bindParam(':nom', $nom);
@@ -185,8 +191,136 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Rafraîchir la liste des commandes
             $orders = getRestaurantOrders($restaurantId);
+            
+            // Message de succès
+            $orderSuccess = "Le statut de la commande #$orderId a été mis à jour avec succès.";
         } catch (PDOException $e) {
             // Gérer l'erreur
+            $orderError = "Erreur lors de la mise à jour du statut : " . $e->getMessage();
+        }
+    }
+    
+    // Traiter la mise à jour du profil
+    if (isset($_POST['update_profile'])) {
+        $nom = trim($_POST['nom_restaurant']);
+        $adresse = trim($_POST['adresse']);
+        $contact = trim($_POST['contact']);
+        
+        // Validation basique
+        if (empty($nom) || empty($adresse) || empty($contact)) {
+            $profileError = 'Veuillez remplir tous les champs.';
+        } else {
+            try {
+                $conn = getDbConnection();
+                $stmt = $conn->prepare("UPDATE Restaurant SET nom_r = :nom, adresse_r = :adresse, contact = :contact WHERE id_restaurant = :id");
+                $stmt->bindParam(':nom', $nom);
+                $stmt->bindParam(':adresse', $adresse);
+                $stmt->bindParam(':contact', $contact);
+                $stmt->bindParam(':id', $restaurantId);
+                $stmt->execute();
+                
+                // Message de succès
+                $profileSuccess = 'Votre profil a été mis à jour avec succès.';
+                
+                // Rafraîchir les informations du restaurant
+                $restaurant = getRestaurantInfo($restaurantId);
+            } catch (PDOException $e) {
+                $profileError = "Erreur lors de la mise à jour du profil : " . $e->getMessage();
+            }
+        }
+    }
+    
+    // Traiter la suppression d'un produit
+    if (isset($_POST['delete_product'])) {
+        $productId = intval($_POST['product_id']);
+        
+        try {
+            $conn = getDbConnection();
+            // Vérifier si le produit appartient bien au restaurant
+            $stmt = $conn->prepare("SELECT id_produit FROM Produit WHERE id_produit = :productId AND id_restaurant = :restaurantId");
+            $stmt->bindParam(':productId', $productId);
+            $stmt->bindParam(':restaurantId', $restaurantId);
+            $stmt->execute();
+            
+            if ($stmt->rowCount() > 0) {
+                // Supprimer le produit
+                $stmt = $conn->prepare("DELETE FROM Produit WHERE id_produit = :productId");
+                $stmt->bindParam(':productId', $productId);
+                $stmt->execute();
+                
+                $productSuccess = 'Produit supprimé avec succès.';
+                
+                // Rafraîchir la liste des produits
+                $products = getRestaurantProducts($restaurantId);
+                $totalProducts = countProducts($restaurantId);
+            } else {
+                $productError = 'Erreur : produit non trouvé ou non autorisé.';
+            }
+        } catch (PDOException $e) {
+            // Si le produit est utilisé dans des commandes, il y aura une erreur de contrainte d'intégrité
+            $productError = 'Impossible de supprimer ce produit car il est utilisé dans des commandes.';
+        }
+    }
+    
+    // Traiter la mise à jour du mot de passe
+    if (isset($_POST['update_password'])) {
+        $currentPassword = $_POST['current_password'];
+        $newPassword = $_POST['new_password'];
+        $confirmPassword = $_POST['confirm_password'];
+        
+        // Validation basique
+        if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
+            $passwordError = 'Veuillez remplir tous les champs.';
+        } elseif ($newPassword !== $confirmPassword) {
+            $passwordError = 'Les nouveaux mots de passe ne correspondent pas.';
+        } elseif (strlen($newPassword) < 6) {
+            $passwordError = 'Le nouveau mot de passe doit contenir au moins 6 caractères.';
+        } else {
+            try {
+                $conn = getDbConnection();
+                
+                // Vérifier si le champ password existe dans la table Restaurant
+                $stmt = $conn->prepare("SHOW COLUMNS FROM Restaurant LIKE 'password'");
+                $stmt->execute();
+                
+                // Si le champ n'existe pas, nous l'ajoutons
+                if ($stmt->rowCount() == 0) {
+                    $stmt = $conn->prepare("ALTER TABLE Restaurant ADD COLUMN password VARCHAR(255) NULL AFTER email");
+                    $stmt->execute();
+                }
+                
+                // Vérifier le mot de passe actuel
+                $stmt = $conn->prepare("SELECT contact, password FROM Restaurant WHERE id_restaurant = :id");
+                $stmt->bindParam(':id', $restaurantId);
+                $stmt->execute();
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                $passwordVerified = false;
+                
+                // Vérifier si le mot de passe est stocké dans le champ password ou contact
+                if (!empty($user['password']) && password_verify($currentPassword, $user['password'])) {
+                    $passwordVerified = true;
+                } elseif (password_verify($currentPassword, $user['contact'])) {
+                    $passwordVerified = true;
+                }
+                
+                if ($passwordVerified) {
+                    // Hasher le nouveau mot de passe
+                    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                    
+                    // Mettre à jour le mot de passe dans le champ password
+                    $stmt = $conn->prepare("UPDATE Restaurant SET password = :password WHERE id_restaurant = :id");
+                    $stmt->bindParam(':password', $hashedPassword);
+                    $stmt->bindParam(':id', $restaurantId);
+                    $stmt->execute();
+                    
+                    $passwordSuccess = 'Votre mot de passe a été mis à jour avec succès.';
+                } else {
+                    $passwordError = 'Le mot de passe actuel est incorrect.';
+                }
+            } catch (PDOException $e) {
+                $passwordError = "Erreur lors de la mise à jour du mot de passe : " . $e->getMessage();
+            }
         }
     }
 }
@@ -325,7 +459,6 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Client</th>
                             <th>Date</th>
                             <th>Montant</th>
@@ -335,7 +468,7 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($orders) === 0): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center;">Aucune commande trouvée.</td>
+                            <td colspan="4" style="text-align: center;">Aucune commande trouvée.</td>
                         </tr>
                         <?php else: ?>
                         
@@ -344,7 +477,6 @@ function formatStatus($status) {
                         foreach ($displayedOrders as $order): 
                         ?>
                         <tr>
-                            <td>#<?php echo $order['id_commande']; ?></td>
                             <td><?php echo htmlspecialchars($order['prenom_c'] . ' ' . $order['nom_c']); ?></td>
                             <td><?php echo date('d/m/Y H:i', strtotime($order['date'])); ?></td>
                             <td><?php echo number_format($order['montant'], 2); ?> €</td>
@@ -365,6 +497,18 @@ function formatStatus($status) {
                 <p>Visualisez et gérez les commandes passées par les clients.</p>
             </div>
             
+            <?php if (!empty($orderSuccess)): ?>
+            <div class="alert alert-success">
+                <?php echo $orderSuccess; ?>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($orderError)): ?>
+            <div class="alert alert-danger">
+                <?php echo $orderError; ?>
+            </div>
+            <?php endif; ?>
+            
             <div class="data-table-container">
                 <div class="data-table-header">
                     <h2>Toutes les commandes</h2>
@@ -373,7 +517,6 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Client</th>
                             <th>Date</th>
                             <th>Montant</th>
@@ -384,13 +527,12 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($orders) === 0): ?>
                         <tr>
-                            <td colspan="6" style="text-align: center;">Aucune commande trouvée.</td>
+                            <td colspan="5" style="text-align: center;">Aucune commande trouvée.</td>
                         </tr>
                         <?php else: ?>
                         
                         <?php foreach ($orders as $order): ?>
                         <tr>
-                            <td>#<?php echo $order['id_commande']; ?></td>
                             <td><?php echo htmlspecialchars($order['prenom_c'] . ' ' . $order['nom_c']); ?></td>
                             <td><?php echo date('d/m/Y H:i', strtotime($order['date'])); ?></td>
                             <td><?php echo number_format($order['montant'], 2); ?> €</td>
@@ -418,7 +560,7 @@ function formatStatus($status) {
                 <div class="modal-content">
                     <span class="close-modal">&times;</span>
                     <h2>Modifier le statut de la commande</h2>
-                    <form method="POST" action="">
+                    <form method="POST" action="dashboard.php#dashboard">
                         <input type="hidden" id="order_id" name="order_id">
                         <div class="form-group">
                             <label for="status">Nouveau statut :</label>
@@ -457,7 +599,6 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Nom</th>
                             <th>Catégorie</th>
                             <th>Prix</th>
@@ -467,14 +608,13 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($products) === 0): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center;">Aucun produit trouvé.</td>
+                            <td colspan="4" style="text-align: center;">Aucun produit trouvé.</td>
                         </tr>
                         <?php else: ?>
                         
                         <?php foreach ($products as $product): ?>
                         <tr>
-                            <td>#<?php echo $product['id_produit']; ?></td>
-                            <td><?php echo htmlspecialchars($product['nom_p']); ?></td>
+                            <td><?php echo htmlspecialchars($product['nom']); ?></td>
                             <td><?php echo htmlspecialchars($product['nom_categorie']); ?></td>
                             <td><?php echo number_format($product['prix'], 2); ?> €</td>
                             <td>
@@ -482,9 +622,12 @@ function formatStatus($status) {
                                     <a href="#" class="btn-icon edit product-edit-btn" data-product-id="<?php echo $product['id_produit']; ?>">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="#" class="btn-icon delete product-delete-btn" data-product-id="<?php echo $product['id_produit']; ?>">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                    <form method="POST" action="dashboard.php#products" style="display: inline;">
+                                        <input type="hidden" name="product_id" value="<?php echo $product['id_produit']; ?>">
+                                        <button type="submit" name="delete_product" class="btn-icon delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -563,7 +706,19 @@ function formatStatus($status) {
             <div class="form-card">
                 <h2>Informations du restaurant</h2>
                 
-                <form method="POST" action="">
+                <?php if (!empty($profileSuccess)): ?>
+                <div class="alert alert-success">
+                    <?php echo $profileSuccess; ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if (!empty($profileError)): ?>
+                <div class="alert alert-danger">
+                    <?php echo $profileError; ?>
+                </div>
+                <?php endif; ?>
+                
+                <form method="POST" action="dashboard.php#dashboard">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="nom_restaurant">Nom du restaurant :</label>
@@ -571,7 +726,7 @@ function formatStatus($status) {
                         </div>
                         
                         <div class="form-group">
-                            <label for="contact">Contact :</label>
+                            <label for="contact">Numéro de téléphone :</label>
                             <input type="text" name="contact" id="contact" class="form-control" value="<?php echo htmlspecialchars($restaurant['contact']); ?>" required>
                         </div>
                         
@@ -583,6 +738,46 @@ function formatStatus($status) {
                     
                     <div class="form-actions">
                         <button type="submit" name="update_profile" class="btn btn-primary">Mettre à jour le profil</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="form-card mt-4">
+                <h2>Changer le mot de passe</h2>
+                
+                <?php if (!empty($passwordSuccess)): ?>
+                <div class="alert alert-success">
+                    <?php echo $passwordSuccess; ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if (!empty($passwordError)): ?>
+                <div class="alert alert-danger">
+                    <?php echo $passwordError; ?>
+                </div>
+                <?php endif; ?>
+                
+                <form method="POST" action="dashboard.php#dashboard">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="current_password">Mot de passe actuel :</label>
+                            <input type="password" name="current_password" id="current_password" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="new_password">Nouveau mot de passe :</label>
+                            <input type="password" name="new_password" id="new_password" class="form-control" required>
+                            <small class="form-text text-muted">Le mot de passe doit contenir au moins 6 caractères.</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm_password">Confirmer le nouveau mot de passe :</label>
+                            <input type="password" name="confirm_password" id="confirm_password" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" name="update_password" class="btn btn-primary">Mettre à jour le mot de passe</button>
                     </div>
                 </form>
             </div>
@@ -601,6 +796,7 @@ function formatStatus($status) {
     height: 100%;
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.4);
+    display: none;
 }
 
 .modal-content {
@@ -641,7 +837,79 @@ function formatStatus($status) {
     color: tomato;
     border: 1px solid tomato;
 }
+
+/* Style pour la modal de confirmation de suppression */
+#delete-confirm-modal {
+    display: none;
+}
+
+.delete-confirm-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.delete-confirm-content h2 {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.delete-confirm-content p {
+    margin-bottom: 2rem;
+    color: var(--text-light);
+}
+
+.delete-confirm-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.btn-cancel {
+    background-color: var(--gris-medium);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-delete {
+    background-color: tomato;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-cancel:hover {
+    background-color: var(--gris-fonce);
+}
+
+.btn-delete:hover {
+    background-color: #e53935;
+}
+
+.mt-4 {
+    margin-top: 2rem;
+}
 </style>
+
+<!-- Modal de confirmation de suppression -->
+<div id="delete-confirm-modal" class="modal">
+    <div class="modal-content">
+        <div class="delete-confirm-content">
+            <h2>Confirmer la suppression</h2>
+            <p>Êtes-vous sûr de vouloir supprimer ce produit ?</p>
+            <div class="delete-confirm-actions">
+                <button id="delete-cancel" class="btn-cancel">Annuler</button>
+                <button id="delete-confirm" class="btn-delete">Supprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -713,12 +981,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Vérifier si le formulaire a déjà une action avec un fragment
         const action = form.getAttribute('action') || '';
         if (!action.includes('#')) {
-            // Obtenir la section parente du formulaire
-            const parentSection = form.closest('section');
-            if (parentSection && parentSection.id) {
-                // Ajouter le fragment au formulaire
-                form.setAttribute('action', `dashboard.php#${parentSection.id}`);
-            }
+            // Ajouter le fragment dashboard pour rediriger vers l'accueil
+            form.setAttribute('action', `dashboard.php#dashboard`);
         }
     });
     
@@ -754,6 +1018,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const newHash = window.location.hash.substring(1);
         if (newHash && document.getElementById(newHash)) {
             showSection(newHash);
+        }
+    });
+    
+    // Gestion de la suppression des produits
+    const deleteBtns = document.querySelectorAll('button[name="delete_product"]');
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const deleteConfirmBtn = document.getElementById('delete-confirm');
+    const deleteCancelBtn = document.getElementById('delete-cancel');
+    let currentDeleteForm = null;
+    
+    deleteBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentDeleteForm = this.closest('form');
+            deleteModal.style.display = 'block';
+        });
+    });
+    
+    deleteCancelBtn.addEventListener('click', function() {
+        deleteModal.style.display = 'none';
+        currentDeleteForm = null;
+    });
+    
+    deleteConfirmBtn.addEventListener('click', function() {
+        if (currentDeleteForm) {
+            currentDeleteForm.submit();
+        }
+        deleteModal.style.display = 'none';
+    });
+    
+    window.addEventListener('click', function(e) {
+        if (e.target === deleteModal) {
+            deleteModal.style.display = 'none';
+            currentDeleteForm = null;
         }
     });
 });

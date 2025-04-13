@@ -24,7 +24,8 @@ CREATE TABLE Restaurant (
     description TEXT,
     image VARCHAR(255),
     email VARCHAR(100) NOT NULL UNIQUE,
-    contact VARCHAR(255) NOT NULL COMMENT 'Utilisé comme mot de passe',
+    password VARCHAR(255) NOT NULL,
+    contact VARCHAR(20) NOT NULL COMMENT 'Numéro de téléphone',
     date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -75,6 +76,7 @@ CREATE TABLE Commande (
     id_commande INT AUTO_INCREMENT PRIMARY KEY,
     id_client INT NOT NULL,
     id_livreur INT,
+    adresse_livraison VARCHAR(255),
     statut ENUM('en attente', 'confirmé', 'en préparation', 'en livraison', 'livré', 'annulé') DEFAULT 'en attente',
     date DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_client) REFERENCES Client(id_client) ON DELETE CASCADE,
@@ -131,10 +133,10 @@ INSERT INTO Client (nom_c, prenom_c, adresse_c, email, mot_de_passe) VALUES
 -- password: motdepasse123
 
 -- Exemples de restaurants
-INSERT INTO Restaurant (nom_r, adresse_r, description, email, contact) VALUES
-('Burger Palace', '10 rue de la Paix, 75002 Paris', 'Les meilleurs burgers de la ville', 'contact@burgerpalace.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka'),
-('Sushi Master', '15 rue du Commerce, 75015 Paris', 'Spécialités de sushi et maki', 'contact@sushimaster.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka'),
-('Pasta Fresca', '8 boulevard Saint-Germain, 75006 Paris', 'Pâtes fraîches et pizzas artisanales', 'contact@pastafresca.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka');
+INSERT INTO Restaurant (nom_r, adresse_r, description, email, password, contact) VALUES
+('Burger Palace', '10 rue de la Paix, 75002 Paris', 'Les meilleurs burgers de la ville', 'contact@burgerpalace.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka', '0145789632'),
+('Sushi Master', '15 rue du Commerce, 75015 Paris', 'Spécialités de sushi et maki', 'contact@sushimaster.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka', '0178452369'),
+('Pasta Fresca', '8 boulevard Saint-Germain, 75006 Paris', 'Pâtes fraîches et pizzas artisanales', 'contact@pastafresca.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka', '0196325874');
 -- password: motdepasse123
 
 -- Exemples de livreurs
