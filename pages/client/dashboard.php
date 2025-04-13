@@ -166,9 +166,9 @@ function formatStatus($status) {
 
 <div class="dashboard-container">
     <!-- Sidebar -->
-    <div class="dashboard-sidebar">
+    <div class="dashboard-sidebar client-dashboard-sidebar">
         <div class="sidebar-header">
-            <h2>Tableau de bord</h2>
+            <h2>MENU</h2>
         </div>
         
         <div class="sidebar-user">
@@ -182,7 +182,6 @@ function formatStatus($status) {
         </div>
         
         <div class="sidebar-menu">
-            <h3>Menu</h3>
             <ul class="menu-items">
                 <li>
                     <a href="#dashboard" class="active">

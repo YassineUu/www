@@ -214,11 +214,4 @@
 .dashboard-content {
     overflow: auto;
     padding-bottom: 30px; /* Espace en bas pour éviter que le contenu touche le footer */
-}
-
-/* Assurer que le footer reste en bas */
-@media screen and (min-height: 800px) {
-    .dashboard-sidebar {
-        height: calc(100vh - 60px - 200px); /* Hauteur ajustée pour le footer */
-    }
 } 

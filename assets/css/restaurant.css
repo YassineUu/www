@@ -247,13 +247,18 @@
 }
 
 .dashboard-sidebar {
-    width: 280px;
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
     background-color: var(--jaune-pastel);
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 60px;
-    height: calc(100vh - 60px - 200px); /* Hauteur ajustée pour tenir compte du footer */
+    height: calc(100vh - 60px);
+    min-height: 500px;
     z-index: 10;
+    flex-shrink: 0;
+    overflow-y: auto;
 }
 
 .sidebar-header {

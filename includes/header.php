@@ -24,7 +24,7 @@ $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FoodDelivery - Livraison de repas</title>
+    <title>Livri - Livraison de repas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Styles CSS communs -->
@@ -94,7 +94,7 @@ $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
     <header>
         <nav class="navbar">
             <div class="logo">
-                <a href="/">FoodDelivery</a>
+                <a href="/">Livri</a>
             </div>
             <ul class="nav-links">
                 <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>

@@ -12,30 +12,39 @@
 /* Sidebar */
 .dashboard-sidebar {
     width: 260px;
+    min-width: 260px;
+    max-width: 260px;
     background-color: var(--jaune-pastel);
     box-shadow: var(--shadow);
-    position: sticky; /* Changer en sticky pour qu'elle reste visible lors du défilement */
-    top: 60px; /* Hauteur du header */
-    height: calc(100vh - 60px - 200px); /* Hauteur ajustée pour tenir compte du footer */
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px); /* Hauteur fixe basée sur la fenêtre */
+    min-height: 500px; /* Hauteur minimale garantie */
     overflow-y: auto;
     z-index: 10;
     border-right: 1px solid var(--gris-moyen);
+    flex-shrink: 0; /* Empêche la sidebar de rétrécir */
 }
 
 .sidebar-header {
-    padding: 1.5rem;
+    padding: 0.8rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     background-color: var(--jaune-pastel);
+    position: sticky;
+    top: 0;
+    z-index: 11;
 }
 
 .sidebar-header h2 {
     margin: 0;
     color: var(--text-dark);
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+    text-align: center;
+    font-weight: bold;
 }
 
 .sidebar-user {
-    padding: 1rem 1.5rem;
+    padding: 0.8rem 1rem;
     display: flex;
     align-items: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -70,7 +79,7 @@
 }
 
 .sidebar-menu {
-    padding: 1.5rem 0;
+    padding: 1rem 0;
 }
 
 .sidebar-menu h3 {
@@ -88,13 +97,13 @@
 }
 
 .menu-items li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 2px;
 }
 
 .menu-items a {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1rem;
     text-decoration: none;
     color: var(--text-dark);
     transition: all 0.2s ease;
@@ -354,6 +363,8 @@
 @media screen and (max-width: 991px) {
     .dashboard-sidebar {
         width: 80px;
+        min-width: 80px;
+        max-width: 80px;
         position: sticky;
         top: 60px;
     }
@@ -383,7 +394,10 @@
     
     .dashboard-sidebar {
         width: 100%;
+        min-width: 100%;
+        max-width: 100%;
         height: auto;
+        min-height: auto;
         position: relative;
         top: 0;
         margin-bottom: 1rem;
@@ -396,20 +410,30 @@
     .menu-items {
         display: flex;
         flex-wrap: wrap;
-        justify-content: center;
+        justify-content: flex-start;
     }
     
     .menu-items li {
-        margin: 0.5rem;
+        margin: 0;
+        flex: 0 0 33.333%;
     }
     
     .menu-items a {
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
+        padding: 0.5rem;
+        border-radius: 0;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .menu-items a i {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
     }
     
     .menu-items a span {
         display: inline;
+        font-size: 0.8rem;
     }
     
     .dashboard-content {

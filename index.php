@@ -4,6 +4,10 @@ include_once 'includes/header.php';
 
 <section class="banner">
     <div class="banner-content">
+        <div class="banner-text">
+            <h1>Livri</h1>
+            <p>Livraison de repas rapide et facile</p>
+        </div>
         <div class="banner-image">
             <img src="assets/images/burger.png" alt="Délicieux burger">
         </div>
@@ -16,36 +20,36 @@ include_once 'includes/header.php';
 
 <section class="categories">
     <div class="category-container">
-        <div class="category-item">
+        <a href="pages/client/restaurants.php?category=1" class="category-item">
             <div class="category-icon">
                 <img src="assets/images/dessert.png" alt="Dessert">
             </div>
-            <h3>dessert</h3>
-        </div>
-        <div class="category-item">
+            <h3>Dessert</h3>
+        </a>
+        <a href="pages/client/restaurants.php?category=2" class="category-item">
             <div class="category-icon">
                 <img src="assets/images/asiatique.png" alt="Asiatique">
             </div>
             <h3>Asiatique</h3>
-        </div>
-        <div class="category-item">
+        </a>
+        <a href="pages/client/restaurants.php?category=3" class="category-item">
             <div class="category-icon">
                 <img src="assets/images/restaurant.png" alt="Restaurant">
             </div>
             <h3>Restaurant</h3>
-        </div>
-        <div class="category-item">
+        </a>
+        <a href="pages/client/restaurants.php?category=4" class="category-item">
             <div class="category-icon">
                 <img src="assets/images/fastfood.png" alt="Fast-food">
             </div>
             <h3>Fast-food</h3>
-        </div>
-        <div class="category-item">
+        </a>
+        <a href="pages/client/restaurants.php?category=5" class="category-item">
             <div class="category-icon">
                 <img src="assets/images/orientale.png" alt="Orientale">
             </div>
             <h3>Orientale</h3>
-        </div>
+        </a>
     </div>
 </section>
 
@@ -68,7 +72,6 @@ include_once 'includes/header.php';
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
     position: relative;
     height: 100%;
     width: 100%;
@@ -76,12 +79,35 @@ include_once 'includes/header.php';
     margin: 0 auto;
 }
 
+.banner-text {
+    position: absolute;
+    left: 400px;
+    top: 40%;
+    transform: translateY(-50%);
+    text-align: left;
+    color: #333;
+    z-index: 5;
+}
+
+.banner-text h1 {
+    font-size: 4rem;
+    margin-bottom: 10px;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.banner-text p {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
 .banner-image {
     position: absolute;
-    left: 30px;
+    left: 100px;
     top: 50%;
     transform: translateY(-50%);
     width: 300px;
+    z-index: 2;
 }
 
 .banner-image img {
@@ -130,47 +156,70 @@ include_once 'includes/header.php';
     font-size: 14px;
 }
 
+/* Styles spécifiques pour les catégories de la page d'accueil */
 .categories {
-    padding: 20px 0;
-    margin-top: 30px;
+    padding: 40px 0;
+    margin-top: 40px;
 }
 
-.category-container {
+.categories .category-container {
     display: flex;
     justify-content: center;
     gap: 50px;
-    padding: 20px;
+    flex-wrap: wrap;
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 20px;
 }
 
-.category-item {
-    text-align: center;
+.categories .category-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: 120px;
+    text-decoration: none;
+    color: #333;
+    transition: transform 0.3s ease;
 }
 
-.category-icon {
-    background-color: #fff;
+.categories .category-icon {
     width: 100px;
     height: 100px;
     border-radius: 50%;
+    background-color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 20px;
+    margin-bottom: 15px;
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
 }
 
-.category-icon img {
+.categories .category-item:hover {
+    transform: translateY(-5px);
+}
+
+.categories .category-item:hover .category-icon {
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+}
+
+.categories .category-icon img {
     width: 60%;
     height: auto;
+    object-fit: contain;
+    transition: transform 0.3s ease;
 }
 
-.category-item h3 {
+.categories .category-icon:hover img {
+    transform: scale(1.1);
+}
+
+.categories .category-item h3 {
     margin: 0;
     font-size: 16px;
     font-weight: normal;
     color: #333;
+    text-align: center;
 }
 
 @media (max-width: 768px) {
@@ -200,8 +249,7 @@ include_once 'includes/header.php';
         margin: 0 auto;
     }
     
-    .category-container {
-        flex-wrap: wrap;
+    .categories .category-container {
         gap: 30px;
     }
 }
