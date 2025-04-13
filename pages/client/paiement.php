@@ -246,14 +246,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
                 
                 <div class="restaurant-info">
                     <p><i class="fas fa-store"></i> <?php echo htmlspecialchars($restaurant['nom_r']); ?></p>
+                    <p><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($restaurant['adresse_r']); ?></p>
                 </div>
                 
                 <div class="order-items">
                     <?php foreach ($cartItems as $item): ?>
                     <div class="order-item">
-                        <div class="item-quantity"><?php echo $item['quantity']; ?>x</div>
-                        <div class="item-name"><?php echo htmlspecialchars($item['name']); ?></div>
-                        <div class="item-price"><?php echo number_format($item['price'] * $item['quantity'], 2); ?> €</div>
+                        <span class="item-name"><?php echo htmlspecialchars($item['name']); ?></span>
+                        <span class="item-quantity">x<?php echo $item['quantity']; ?></span>
+                        <span class="item-price"><?php echo number_format($item['price'] * $item['quantity'], 2); ?> €</span>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -267,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
                         <span>Frais de livraison</span>
                         <span><?php echo number_format($fraisLivraison, 2); ?> €</span>
                     </div>
-                    <div class="total-line total-final">
+                    <div class="total-final">
                         <span>Total</span>
                         <span><?php echo number_format($totalAvecLivraison, 2); ?> €</span>
                     </div>

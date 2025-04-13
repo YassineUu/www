@@ -25,144 +25,186 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Gestion de l'ajout au panier
-    const addToCartButtons = document.querySelectorAll('.btn-add-to-cart');
+    // Sélecteurs des éléments
+    const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+    const container = document.querySelector('.container');
     
-    addToCartButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Vérifier si l'utilisateur est connecté
-            const isLoggedIn = typeof window.isLoggedIn !== 'undefined' ? window.isLoggedIn : false;
-            
-            if (!isLoggedIn) {
-                showLoginRequiredNotification();
-                return;
-            }
-            
-            const productId = this.getAttribute('data-product-id');
-            const productName = this.getAttribute('data-product-name');
-            const productPrice = this.getAttribute('data-product-price');
-            
-            // Récupérer l'ID du restaurant depuis l'URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const restaurantId = urlParams.get('id');
-            
-            // Récupérer le nom du restaurant depuis la page
-            const restaurantNameElement = document.querySelector('.restaurant-name');
-            const restaurantName = restaurantNameElement ? restaurantNameElement.textContent : 'Restaurant';
-            
-            // Récupérer le panier existant ou créer un nouveau
-            let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            
-            // Vérifier si le panier contient déjà des produits d'un autre restaurant
-            if (cart.length > 0 && cart[0].restaurant_id !== restaurantId) {
-                showNotification('Vous ne pouvez pas commander des produits de différents restaurants en même temps. Veuillez vider votre panier ou terminer votre commande actuelle.', true);
-                return;
-            }
-            
-            // Vérifier si le produit est déjà dans le panier
-            const existingProductIndex = cart.findIndex(item => item.id === productId);
-            
-            if (existingProductIndex !== -1) {
-                // Si oui, incrémenter la quantité
-                cart[existingProductIndex].quantity += 1;
-            } else {
-                // Sinon, ajouter le produit
-                cart.push({
-                    id: productId,
-                    name: productName,
-                    price: productPrice,
-                    quantity: 1,
-                    restaurant_id: restaurantId,
-                    restaurant_name: restaurantName
-                });
-            }
-            
-            // Sauvegarder le panier
-            localStorage.setItem('cart', JSON.stringify(cart));
-            
-            // Afficher une notification plus élégante avec options
-            showCartNotification(productName);
-        });
-    });
+    // Créer la notification
+    const notification = document.createElement('div');
+    notification.className = 'cart-notification';
+    notification.innerHTML = '<i class="fas fa-check-circle"></i> Produit ajouté au panier';
+    document.body.appendChild(notification);
     
-    // Fonction pour afficher une notification avec options pour le panier
-    function showCartNotification(productName) {
-        // Créer l'élément de notification
-        const notification = document.createElement('div');
-        notification.className = 'notification cart-notification';
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-check-circle"></i>
-                <span><strong>${productName}</strong> a été ajouté au panier !</span>
-                <div class="notification-actions">
-                    <button class="btn-notification-secondary">Continuer mes achats</button>
-                </div>
-            </div>
-        `;
+    // Fonction pour ajouter au panier
+    function addToCart(event) {
+        const button = event.currentTarget;
+        const productId = button.getAttribute('data-id');
+        const productName = button.getAttribute('data-name');
+        const productPrice = parseFloat(button.getAttribute('data-price'));
         
-        // Ajouter la notification au DOM
-        document.body.appendChild(notification);
+        // Récupérer le nom du restaurant et son ID depuis la page
+        const restaurantNameElement = document.querySelector('.restaurant-name');
+        const restaurantName = restaurantNameElement ? restaurantNameElement.textContent.trim() : 'Restaurant';
+        const restaurantId = new URLSearchParams(window.location.search).get('id');
         
-        // Afficher la notification avec animation
+        // Vérifier si l'utilisateur est connecté
+        if (!window.isLoggedIn) {
+            // Rediriger vers la page de connexion
+            window.location.href = '/pages/auth/login.php?type=client&redirect=' + encodeURIComponent(window.location.href);
+            return;
+        }
+        
+        // Animation du bouton
+        button.innerHTML = '<i class="fas fa-check"></i> Ajouté';
+        button.classList.add('added');
+        
+        // Restaurer le bouton après un délai
         setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
+            button.innerHTML = '<i class="fas fa-plus"></i> Ajouter';
+            button.classList.remove('added');
+        }, 2000);
         
-        // Ajouter un événement au bouton "Continuer mes achats"
-        const continueButton = notification.querySelector('.btn-notification-secondary');
-        continueButton.addEventListener('click', () => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        });
+        // Récupérer le panier actuel du localStorage
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
         
-        // Supprimer la notification après un délai
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        document.body.removeChild(notification);
+        // Vérifier si le panier contient déjà des produits d'un autre restaurant
+        if (cart.length > 0 && cart[0].restaurant_id && cart[0].restaurant_id !== restaurantId) {
+            // Utiliser une confirmation plus esthétique
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Attention !',
+                    text: "Vous avez déjà des produits d'un autre restaurant dans votre panier. Si vous continuez, votre panier actuel sera vidé.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4CAF50',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Oui, vider le panier',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Vider le panier existant
+                        cart = [];
+                        
+                        // Ajouter le nouveau produit au panier
+                        cart.push({
+                            id: productId,
+                            name: productName,
+                            price: productPrice,
+                            quantity: 1,
+                            restaurant_id: restaurantId,
+                            restaurant_name: restaurantName
+                        });
+                        
+                        // Mettre à jour le panier dans localStorage
+                        localStorage.setItem('cart', JSON.stringify(cart));
+                        
+                        // Mettre à jour le compteur du panier dans le header
+                        updateCartCounter();
+                        
+                        // Afficher la notification
+                        showNotification();
                     }
-                }, 300);
+                });
+                return;
+            } else {
+                // Fallback sur alert standard si SweetAlert n'est pas disponible
+                if (confirm("Attention: Vous avez déjà des produits d'un autre restaurant dans votre panier. Si vous continuez, votre panier actuel sera vidé.")) {
+                    // Vider le panier existant
+                    cart = [];
+                } else {
+                    return;
+                }
             }
-        }, 5000);
+        }
+        
+        // Vérifier si le produit est déjà dans le panier
+        const existingProductIndex = cart.findIndex(item => item.id === productId);
+        
+        if (existingProductIndex !== -1) {
+            // Incrémenter la quantité si le produit existe déjà
+            cart[existingProductIndex].quantity += 1;
+        } else {
+            // Ajouter le nouveau produit au panier
+            cart.push({
+                id: productId,
+                name: productName,
+                price: productPrice,
+                quantity: 1,
+                restaurant_id: restaurantId,
+                restaurant_name: restaurantName
+            });
+        }
+        
+        // Mettre à jour le panier dans localStorage
+        localStorage.setItem('cart', JSON.stringify(cart));
+        
+        // Mettre à jour le compteur du panier dans le header
+        updateCartCounter();
+        
+        // Afficher la notification
+        showNotification();
     }
     
-    // Fonction pour afficher une notification
-    function showNotification(message, isError = false) {
-        // Créer l'élément de notification
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.innerHTML = `
-            <div class="notification-content ${isError ? 'notification-error' : ''}">
-                <i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-                <span>${message}</span>
-            </div>
-        `;
+    // Fonction pour mettre à jour le compteur du panier
+    function updateCartCounter() {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const cartItems = cart.reduce((total, item) => total + item.quantity, 0);
         
-        // Ajouter la notification au DOM
-        document.body.appendChild(notification);
+        // Mise à jour du compteur dans le header si l'élément existe
+        const cartCounter = document.querySelector('.cart-counter');
+        if (cartCounter) {
+            cartCounter.textContent = cartItems;
+            
+            if (cartItems > 0) {
+                cartCounter.classList.add('visible');
+            } else {
+                cartCounter.classList.remove('visible');
+            }
+        }
+    }
+    
+    // Fonction pour afficher la notification
+    function showNotification() {
+        notification.classList.add('show');
         
-        // Afficher la notification avec animation
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
-        
-        // Supprimer la notification après un délai
+        // Cacher la notification après 3 secondes
         setTimeout(() => {
             notification.classList.remove('show');
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
         }, 3000);
     }
     
-    // Fonction pour afficher une notification de connexion requise
-    function showLoginRequiredNotification() {
-        showNotification('Vous devez être connecté pour ajouter des produits au panier. <a href="/pages/auth/login.php">Se connecter</a>', true);
+    // Ajouter les écouteurs d'événements
+    addToCartButtons.forEach(button => {
+        button.addEventListener('click', addToCart);
+    });
+    
+    // Mettre à jour le compteur au chargement de la page
+    updateCartCounter();
+    
+    // Animation des cards au scroll
+    const productCards = document.querySelectorAll('.product-card');
+    
+    // Fonction pour vérifier si un élément est visible dans la fenêtre
+    function isElementInViewport(el) {
+        const rect = el.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
     }
+    
+    // Fonction pour animer les éléments visibles
+    function animateVisibleElements() {
+        productCards.forEach(card => {
+            if (isElementInViewport(card) && !card.classList.contains('visible')) {
+                card.classList.add('visible');
+            }
+        });
+    }
+    
+    // Appeler la fonction au chargement et au scroll
+    window.addEventListener('scroll', animateVisibleElements);
+    animateVisibleElements();
 }); 

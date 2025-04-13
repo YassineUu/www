@@ -51,12 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order']) && $is
             <p class="cart-subtitle">Consultez et modifiez les articles de votre panier avant de passer commande</p>
         </div>
         
-        <div id="cart-content" class="loading-message">
+        <div class="loading-message">
             <div class="loading-spinner"></div>
             <p>Chargement du panier...</p>
         </div>
         
-        <div id="cart-empty" class="empty-cart" style="display: none;">
+        <div class="empty-cart" style="display: none;">
             <div class="empty-cart-icon">
                 <i class="fas fa-shopping-cart"></i>
             </div>
@@ -65,44 +65,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order']) && $is
             <a href="restaurants.php" class="btn btn-primary">Découvrir les restaurants</a>
         </div>
         
-        <div id="cart-items" style="display: none;">
-            <div class="cart-list-header">
-                <div class="cart-header-product">Produit</div>
-                <div class="cart-header-price">Prix unitaire</div>
-                <div class="cart-header-quantity">Quantité</div>
-                <div class="cart-header-total">Total</div>
-                <div class="cart-header-actions">Actions</div>
+        <div id="cart-items" class="cart-items" style="display: none;">
+            <!-- Les articles du panier seront affichés ici par JavaScript -->
+        </div>
+        
+        <div class="cart-summary" style="display: none;">
+            <div class="cart-total-wrapper">
+                <div class="cart-total-label">Total de la commande</div>
+                <div class="cart-total-amount">0.00 €</div>
             </div>
             
-            <div class="cart-list">
-                <!-- Les articles du panier seront affichés ici -->
-            </div>
-            
-            <div class="cart-summary">
-                <div class="cart-total">
-                    <div class="cart-total-label">Total de la commande</div>
-                    <div class="cart-total-amount">0.00 €</div>
-                </div>
-                
-                <div class="cart-actions">
-                    <?php if ($isLoggedIn): ?>
-                    <form method="POST" action="">
-                        <input type="hidden" name="cart_items" id="cart-items-input">
-                        <button type="submit" name="place_order" class="btn btn-primary btn-order btn-large">
-                            <i class="fas fa-credit-card"></i> Procéder au paiement
-                        </button>
-                    </form>
-                    <?php else: ?>
-                    <div class="login-required">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <p>Veuillez vous <a href="/pages/auth/login.php">connecter</a> pour finaliser votre commande.</p>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <button id="clear-cart" class="btn btn-secondary">
-                        <i class="fas fa-trash"></i> Vider le panier
+            <div class="cart-actions">
+                <?php if ($isLoggedIn): ?>
+                <form method="POST" action="">
+                    <input type="hidden" name="cart_items" id="cart-items-input">
+                    <button type="submit" name="place_order" class="btn-order">
+                        <i class="fas fa-credit-card"></i> Procéder au paiement
                     </button>
+                </form>
+                <?php else: ?>
+                <div class="login-required">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Veuillez vous <a href="/pages/auth/login.php">connecter</a> pour finaliser votre commande.</p>
                 </div>
+                <?php endif; ?>
+                
+                <button id="clear-cart" class="btn-secondary">
+                    <i class="fas fa-trash"></i> Vider le panier
+                </button>
             </div>
         </div>
     </div>
@@ -112,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order']) && $is
     // Variable globale pour la connexion utilisateur (utilisée par le JavaScript)
     const isLoggedIn = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
 </script>
+<script src="../../assets/js/cart.js"></script>
 
 <?php
 include_once '../../includes/footer.php';

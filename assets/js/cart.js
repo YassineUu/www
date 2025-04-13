@@ -2,88 +2,117 @@ document.addEventListener('DOMContentLoaded', function() {
     // Vérifier si l'utilisateur est connecté (sera défini dans le HTML)
     // const isLoggedIn = défini via un attribut data ou une variable PHP
     
+    // Initialiser le bouton "Vider le panier"
+    const clearCartButton = document.getElementById('clear-cart');
+    if (clearCartButton) {
+        clearCartButton.addEventListener('click', clearCart);
+    }
+    
+    // Charger le panier immédiatement au chargement de la page
     loadCart();
     
     // Charger le panier
     function loadCart() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const cartContent = document.getElementById('cart-content');
-        const cartEmpty = document.getElementById('cart-empty');
-        const cartItems = document.getElementById('cart-items');
-        const cartList = document.querySelector('.cart-list');
+        // Récupérer le panier depuis localStorage
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        // Récupérer les éléments du DOM
+        const loadingMessage = document.querySelector('.loading-message');
+        const emptyCartMessage = document.querySelector('.empty-cart');
+        const cartItemsContainer = document.querySelector('.cart-items');
+        const cartSummary = document.querySelector('.cart-summary');
         const cartTotalAmount = document.querySelector('.cart-total-amount');
         const cartItemsInput = document.getElementById('cart-items-input');
         
         // Masquer le message de chargement
-        if (cartContent) cartContent.style.display = 'none';
+        if (loadingMessage) loadingMessage.style.display = 'none';
         
+        // Afficher le message approprié en fonction du contenu du panier
         if (cart.length === 0) {
-            // Afficher le message "panier vide"
-            if (cartEmpty) cartEmpty.style.display = 'block';
-        } else {
-            // Afficher les articles du panier
-            if (cartItems) cartItems.style.display = 'block';
-            
-            // Vider la liste des articles
-            if (cartList) cartList.innerHTML = '';
-            
-            // Variables pour calculer le total
-            let total = 0;
-            
-            // Ajouter chaque article à la liste
-            cart.forEach((item, index) => {
-                const itemTotal = parseFloat(item.price) * item.quantity;
-                total += itemTotal;
-                
-                if (cartList) {
-                    const cartItem = document.createElement('div');
-                    cartItem.className = 'cart-item';
-                    cartItem.setAttribute('data-price', item.price);
-                    cartItem.setAttribute('data-index', index);
-                    
-                    cartItem.innerHTML = `
-                        <div class="cart-item-info">
-                            <h3>${item.name}</h3>
-                            <p class="cart-item-restaurant">Restaurant: ${item.restaurant_name || 'Non spécifié'}</p>
-                        </div>
-                        <div class="cart-item-price">
-                            ${parseFloat(item.price).toFixed(2)} €
-                        </div>
-                        <div class="cart-item-quantity">
-                            <button class="quantity-decrease">-</button>
-                            <input type="number" class="quantity-input" value="${item.quantity}" min="1" readonly>
-                            <button class="quantity-increase">+</button>
-                        </div>
-                        <div class="cart-item-total">
-                            ${itemTotal.toFixed(2)} €
-                        </div>
-                        <div class="cart-item-remove">
-                            <button class="remove-item"><i class="fas fa-trash"></i> Supprimer</button>
-                        </div>
-                    `;
-                    
-                    cartList.appendChild(cartItem);
-                }
-            });
-            
-            // Mettre à jour le total
-            if (cartTotalAmount) cartTotalAmount.textContent = total.toFixed(2) + ' €';
-            
-            // Mettre à jour l'input caché pour le formulaire
-            if (cartItemsInput) cartItemsInput.value = JSON.stringify(cart);
-            
-            // Ajouter les écouteurs d'événements pour les boutons de quantité
-            initQuantityControls();
-            
-            // Ajouter les écouteurs d'événements pour les boutons de suppression
-            initRemoveButtons();
+            if (emptyCartMessage) emptyCartMessage.style.display = 'block';
+            if (cartItemsContainer) cartItemsContainer.style.display = 'none';
+            if (cartSummary) cartSummary.style.display = 'none';
+            return;
         }
         
-        // Ajouter l'écouteur d'événement pour le bouton "Vider le panier"
-        const clearCartButton = document.getElementById('clear-cart');
-        if (clearCartButton) {
-            clearCartButton.addEventListener('click', clearCart);
+        // Afficher le contenu du panier
+        if (emptyCartMessage) emptyCartMessage.style.display = 'none';
+        if (cartItemsContainer) cartItemsContainer.style.display = 'block';
+        if (cartSummary) cartSummary.style.display = 'block';
+        
+        // Vider le conteneur des articles
+        if (cartItemsContainer) cartItemsContainer.innerHTML = '';
+        
+        // Créer la structure du tableau
+        const tableHeader = document.createElement('div');
+        tableHeader.className = 'cart-list-header';
+        tableHeader.innerHTML = `
+            <div class="cart-header-product">Produit</div>
+            <div class="cart-header-price">Prix unitaire</div>
+            <div class="cart-header-quantity">Quantité</div>
+            <div class="cart-header-total">Total</div>
+            <div class="cart-header-actions">Actions</div>
+        `;
+        cartItemsContainer.appendChild(tableHeader);
+        
+        const cartList = document.createElement('div');
+        cartList.className = 'cart-list';
+        cartItemsContainer.appendChild(cartList);
+        
+        // Afficher les informations du restaurant si disponibles
+        if (cart.length > 0 && cart[0].restaurant_name) {
+            const restaurantInfo = document.createElement('div');
+            restaurantInfo.className = 'restaurant-info-cart';
+            restaurantInfo.innerHTML = `
+                <h3><i class="fas fa-store"></i> Restaurant: ${cart[0].restaurant_name}</h3>
+            `;
+            cartList.appendChild(restaurantInfo);
         }
+        
+        // Parcourir les éléments du panier
+        cart.forEach((item, index) => {
+            // Créer un élément de panier
+            const cartItem = document.createElement('div');
+            cartItem.className = 'cart-item';
+            cartItem.setAttribute('data-index', index);
+            cartItem.setAttribute('data-price', item.price);
+            
+            cartItem.innerHTML = `
+                <div class="cart-item-info">
+                    <h3>${item.name}</h3>
+                    <p class="cart-item-restaurant"><i class="fas fa-store"></i> ${item.restaurant_name || 'Restaurant'}</p>
+                </div>
+                <div class="cart-item-price">
+                    ${parseFloat(item.price).toFixed(2)} €
+                </div>
+                <div class="cart-item-quantity">
+                    <button class="quantity-decrease">-</button>
+                    <input type="number" class="quantity-input" value="${item.quantity}" min="1" readonly>
+                    <button class="quantity-increase">+</button>
+                </div>
+                <div class="cart-item-total">
+                    ${(item.price * item.quantity).toFixed(2)} €
+                </div>
+                <div class="cart-item-remove">
+                    <button class="remove-item"><i class="fas fa-trash"></i> Supprimer</button>
+                </div>
+            `;
+            
+            cartList.appendChild(cartItem);
+        });
+        
+        // Calculer et afficher le total
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        if (cartTotalAmount) cartTotalAmount.textContent = total.toFixed(2) + ' €';
+        
+        // Mettre à jour l'input caché pour le formulaire
+        if (cartItemsInput) cartItemsInput.value = JSON.stringify(cart);
+        
+        // Initialiser les contrôles de quantité
+        initQuantityControls();
+        
+        // Initialiser les boutons de suppression
+        initRemoveButtons();
     }
     
     // Initialiser les contrôles de quantité
@@ -131,7 +160,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cartItem = this.closest('.cart-item');
                 const index = parseInt(cartItem.getAttribute('data-index'));
                 
-                removeCartItem(index);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Supprimer l\'article ?',
+                        text: "Voulez-vous vraiment retirer cet article du panier ?",
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#4CAF50',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Oui, supprimer',
+                        cancelButtonText: 'Annuler'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            removeCartItem(index);
+                            Swal.fire(
+                                'Supprimé !',
+                                'L\'article a été retiré de votre panier.',
+                                'success'
+                            );
+                        }
+                    });
+                } else {
+                    if (confirm("Voulez-vous vraiment retirer cet article du panier ?")) {
+                        removeCartItem(index);
+                    }
+                }
             });
         });
     }
@@ -149,6 +202,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cartItemsInput) {
                 cartItemsInput.value = JSON.stringify(cart);
             }
+            
+            // Mettre à jour le compteur du panier dans l'en-tête
+            updateCartBadge();
         }
     }
     
@@ -189,12 +245,59 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Recharger le panier
             loadCart();
+            
+            // Mettre à jour le compteur du panier dans l'en-tête
+            updateCartBadge();
         }
     }
     
     // Vider le panier
     function clearCart() {
-        localStorage.removeItem('cart');
-        loadCart();
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Vider le panier ?',
+                text: "Voulez-vous vraiment vider votre panier ?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Oui, vider le panier',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('cart');
+                    loadCart();
+                    updateCartBadge();
+                    Swal.fire(
+                        'Vidé !',
+                        'Votre panier a été vidé avec succès.',
+                        'success'
+                    );
+                }
+            });
+        } else {
+            if (confirm("Voulez-vous vraiment vider votre panier ?")) {
+                localStorage.removeItem('cart');
+                loadCart();
+                updateCartBadge();
+            }
+        }
+    }
+    
+    // Mettre à jour le badge du panier dans le header
+    function updateCartBadge() {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const cartCounter = document.querySelector('.cart-counter');
+        
+        if (cartCounter) {
+            const cartItems = cart.reduce((total, item) => total + item.quantity, 0);
+            cartCounter.textContent = cartItems;
+            
+            if (cartItems > 0) {
+                cartCounter.classList.add('visible');
+            } else {
+                cartCounter.classList.remove('visible');
+            }
+        }
     }
 }); 

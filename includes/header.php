@@ -26,10 +26,15 @@ $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Livri - Livraison de repas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     
     <!-- Styles CSS communs -->
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/common.css">
+    
+    <!-- Ajout de SweetAlert2 pour les alertes élégantes -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
     
     <!-- Styles CSS spécifiques -->
     <?php if ($isDashboard): ?>

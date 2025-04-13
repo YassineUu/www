@@ -144,27 +144,22 @@ $categories = getProductCategories($restaurantId);
             <h3><?php echo htmlspecialchars($categoryName); ?></h3>
             
             <div class="product-grid">
+                <?php $i = 0; ?>
                 <?php foreach ($categoryProducts as $product): ?>
-                <div class="product-card">
+                <?php $i++; ?>
+                <div class="product-card" data-category="<?php echo htmlspecialchars($product['id_categorie']); ?>" style="--animation-order: <?php echo $i; ?>">
                     <div class="product-image">
-                        <?php if (!empty($product['image'])): ?>
-                        <img src="<?php echo htmlspecialchars($product['image']); ?>" alt="<?php echo htmlspecialchars($product['nom']); ?>">
-                        <?php else: ?>
-                        <img src="/assets/images/product_default.jpg" alt="<?php echo htmlspecialchars($product['nom']); ?>">
-                        <?php endif; ?>
+                        <img src="/assets/images/produit.png" alt="<?php echo htmlspecialchars($product['nom']); ?>">
                     </div>
-                    <div class="product-content">
-                        <h4 class="product-title"><?php echo htmlspecialchars($product['nom']); ?></h4>
+                    <div class="product-info">
+                        <h3><?php echo htmlspecialchars($product['nom']); ?></h3>
                         <p class="product-description"><?php echo htmlspecialchars($product['description']); ?></p>
-                        <div class="product-price"><?php echo number_format($product['prix'], 2); ?> €</div>
-                    </div>
-                    <div class="product-actions">
-                        <button class="btn-add-to-cart" 
-                                data-product-id="<?php echo $product['id_produit']; ?>"
-                                data-product-name="<?php echo htmlspecialchars($product['nom']); ?>"
-                                data-product-price="<?php echo $product['prix']; ?>">
-                            <i class="fas fa-cart-plus"></i> Ajouter
-                        </button>
+                        <div class="product-footer">
+                            <span class="product-price"><?php echo number_format($product['prix'], 2); ?> €</span>
+                            <button class="add-to-cart-btn" data-id="<?php echo $product['id_produit']; ?>" data-name="<?php echo htmlspecialchars($product['nom']); ?>" data-price="<?php echo $product['prix']; ?>">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>

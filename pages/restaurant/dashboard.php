@@ -56,8 +56,17 @@ function getRestaurantProducts($restaurantId) {
                                ORDER BY c.nom, p.nom");
         $stmt->bindParam(':restaurantId', $restaurantId);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Déboggage - vérifier les données récupérées
+        error_log("Nombre de produits récupérés: " . count($products));
+        if (count($products) > 0) {
+            error_log("Premier produit: " . print_r($products[0], true));
+        }
+        
+        return $products;
     } catch (PDOException $e) {
+        error_log("Erreur lors de la récupération des produits: " . $e->getMessage());
         return [];
     }
 }
@@ -148,8 +157,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_product'])) {
         $nom = trim($_POST['nom']);
         $prix = floatval($_POST['prix']);
-        $description = trim($_POST['description']);
         $categorie = intval($_POST['categorie']);
+        $description = trim($_POST['description']);
+        $id_restaurant = $restaurantId;
         
         // Validation basique
         if (empty($nom) || $prix <= 0 || empty($description) || $categorie <= 0) {
@@ -157,22 +167,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $conn = getDbConnection();
+                
                 $stmt = $conn->prepare("INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible) 
-                                       VALUES (:restaurantId, :categorieId, :nom, :description, :prix, TRUE)");
-                $stmt->bindParam(':restaurantId', $restaurantId);
+                                      VALUES (:restaurantId, :categorieId, :nom, :description, :prix, TRUE)");
+                $stmt->bindParam(':restaurantId', $id_restaurant);
                 $stmt->bindParam(':categorieId', $categorie);
                 $stmt->bindParam(':nom', $nom);
-                $stmt->bindParam(':prix', $prix);
                 $stmt->bindParam(':description', $description);
-                $stmt->execute();
+                $stmt->bindParam(':prix', $prix);
                 
-                $productSuccess = 'Produit ajouté avec succès.';
-                
-                // Rafraîchir la liste des produits
-                $products = getRestaurantProducts($restaurantId);
-                $totalProducts = countProducts($restaurantId);
+                $result = $stmt->execute();
+                if ($result) {
+                    $productSuccess = 'Produit ajouté avec succès.';
+                    
+                    // Rafraîchir la liste des produits
+                    $products = getRestaurantProducts($id_restaurant);
+                    $totalProducts = countProducts($id_restaurant);
+                    
+                    // Redirection vers la section produits pour voir le produit ajouté
+                    echo "<script>window.location.href = 'dashboard.php#products';</script>";
+                } else {
+                    $productError = 'Erreur lors de l\'exécution de la requête.';
+                }
             } catch (PDOException $e) {
                 $productError = 'Erreur lors de l\'ajout du produit: ' . $e->getMessage();
+                error_log("Erreur PDO: " . $e->getMessage());
             }
         }
     }
