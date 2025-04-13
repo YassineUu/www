@@ -66,7 +66,7 @@ function getRestaurantProducts($restaurantId) {
 function getCategories() {
     try {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("SELECT * FROM Categorie ORDER BY nom_categorie");
+        $stmt = $conn->prepare("SELECT id_categorie, nom as nom_categorie FROM Categorie ORDER BY nom");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
@@ -518,7 +518,7 @@ function formatStatus($status) {
                 </div>
                 <?php endif; ?>
                 
-                <form method="POST" action="">
+                <form method="POST" action="dashboard.php#add-product">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="nom">Nom du produit :</label>
@@ -649,12 +649,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuLinks = document.querySelectorAll('.menu-items a');
     const sections = document.querySelectorAll('.dashboard-content section');
     
-    // Masquer toutes les sections sauf la première
-    sections.forEach((section, index) => {
-        if (index !== 0) {
+    // Fonction pour afficher une section spécifique par son ID
+    function showSection(targetId) {
+        console.log("Affichage de la section:", targetId);
+        
+        // Masquer toutes les sections
+        sections.forEach(section => {
             section.style.display = 'none';
+        });
+        
+        // Supprimer la classe active de tous les liens
+        menuLinks.forEach(menuLink => {
+            menuLink.classList.remove('active');
+        });
+        
+        // Afficher la section cible
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            
+            // Mettre à jour le lien actif dans le menu
+            const activeLink = document.querySelector(`.menu-items a[href="#${targetId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // Mettre à jour l'URL sans recharger la page
+            history.replaceState(null, null, `#${targetId}`);
         }
-    });
+    }
+    
+    // Vérifier si un fragment existe dans l'URL
+    const hash = window.location.hash.substring(1);
+    if (hash && document.getElementById(hash)) {
+        // Si un fragment valide existe, afficher cette section
+        showSection(hash);
+    } else {
+        // Sinon, afficher la première section (tableau de bord)
+        showSection('dashboard');
+    }
     
     // Gestion de la navigation
     menuLinks.forEach(link => {
@@ -663,26 +696,30 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.getAttribute('href').startsWith('#')) {
                 e.preventDefault();
                 
-                // Supprimer la classe active de tous les liens
-                menuLinks.forEach(menuLink => {
-                    menuLink.classList.remove('active');
-                });
-                
-                // Ajouter la classe active au lien cliqué
-                this.classList.add('active');
-                
                 // Récupérer l'ID de la section à afficher
                 const targetId = this.getAttribute('href').substring(1);
                 
-                // Masquer toutes les sections
-                sections.forEach(section => {
-                    section.style.display = 'none';
-                });
+                // Afficher la section correspondante
+                showSection(targetId);
                 
-                // Afficher la section cible
-                document.getElementById(targetId).style.display = 'block';
+                // Scroll au début de la section
+                window.scrollTo(0, 0);
             }
         });
+    });
+    
+    // Gestion des formulaires - rediriger vers la bonne section après soumission
+    document.querySelectorAll('form').forEach(form => {
+        // Vérifier si le formulaire a déjà une action avec un fragment
+        const action = form.getAttribute('action') || '';
+        if (!action.includes('#')) {
+            // Obtenir la section parente du formulaire
+            const parentSection = form.closest('section');
+            if (parentSection && parentSection.id) {
+                // Ajouter le fragment au formulaire
+                form.setAttribute('action', `dashboard.php#${parentSection.id}`);
+            }
+        }
     });
     
     // Modal pour modifier le statut des commandes
@@ -709,6 +746,14 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('click', function(e) {
         if (e.target === statusModal) {
             statusModal.style.display = 'none';
+        }
+    });
+    
+    // Écouter les changements d'URL pour mettre à jour la section active
+    window.addEventListener('hashchange', function() {
+        const newHash = window.location.hash.substring(1);
+        if (newHash && document.getElementById(newHash)) {
+            showSection(newHash);
         }
     });
 });

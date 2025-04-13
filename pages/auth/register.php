@@ -36,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $conn = getDbConnection();
             
+            // Hasher le mot de passe
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
             // Déterminer la table et les champs selon le type d'utilisateur
             switch ($userType) {
                 case 'client':
@@ -48,12 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $error = 'Cet email est déjà utilisé.';
                     } else {
                         // Insérer le nouveau client
-                        $stmt = $conn->prepare("INSERT INTO Client (nom_c, prenom_c, mot_de_passe, adresse_c, email) VALUES (:nom, :prenom, :password, :adresse, :email)");
+                        $stmt = $conn->prepare("INSERT INTO Client (nom_c, prenom_c, adresse_c, email, mot_de_passe) VALUES (:nom, :prenom, :adresse, :email, :password)");
                         $stmt->bindParam(':nom', $nom);
                         $stmt->bindParam(':prenom', $prenom);
-                        $stmt->bindParam(':password', $password); // Dans un projet réel, hasher le mot de passe
                         $stmt->bindParam(':adresse', $adresse);
                         $stmt->bindParam(':email', $email);
+                        $stmt->bindParam(':password', $hashedPassword); // Utilisez le mot de passe haché
                         $stmt->execute();
                         
                         $success = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
@@ -61,19 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                     
                 case 'restaurant':
-                    // Vérifier si le contact existe déjà
-                    $stmt = $conn->prepare("SELECT * FROM Restaurant WHERE contact = :contact");
-                    $stmt->bindParam(':contact', $email);
+                    // Vérifier si l'email existe déjà
+                    $stmt = $conn->prepare("SELECT * FROM Restaurant WHERE email = :email");
+                    $stmt->bindParam(':email', $email);
                     $stmt->execute();
                     
                     if ($stmt->rowCount() > 0) {
-                        $error = 'Ce contact est déjà utilisé.';
+                        $error = 'Cet email est déjà utilisé.';
                     } else {
                         // Insérer le nouveau restaurant
-                        $stmt = $conn->prepare("INSERT INTO Restaurant (nom_r, contact, adresse_r) VALUES (:nom, :contact, :adresse)");
+                        $stmt = $conn->prepare("INSERT INTO Restaurant (nom_r, adresse_r, email, contact) VALUES (:nom, :adresse, :email, :password)");
                         $stmt->bindParam(':nom', $nom);
-                        $stmt->bindParam(':contact', $email);
                         $stmt->bindParam(':adresse', $adresse);
+                        $stmt->bindParam(':email', $email);
+                        $stmt->bindParam(':password', $hashedPassword); // Utilisez le mot de passe haché dans le champ contact
                         $stmt->execute();
                         
                         $success = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
@@ -81,19 +85,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                     
                 case 'livreur':
-                    // Vérifier si le téléphone existe déjà
-                    $stmt = $conn->prepare("SELECT * FROM Livreur WHERE telephone = :telephone");
-                    $stmt->bindParam(':telephone', $telephone);
+                    // Vérifier si l'email existe déjà
+                    $stmt = $conn->prepare("SELECT * FROM Livreur WHERE email = :email");
+                    $stmt->bindParam(':email', $email);
                     $stmt->execute();
                     
                     if ($stmt->rowCount() > 0) {
-                        $error = 'Ce numéro de téléphone est déjà utilisé.';
+                        $error = 'Cet email est déjà utilisé.';
                     } else {
                         // Insérer le nouveau livreur
-                        $stmt = $conn->prepare("INSERT INTO Livreur (nom_l, prenom_l, telephone, statut_l) VALUES (:nom, :prenom, :telephone, 'disponible')");
+                        $stmt = $conn->prepare("INSERT INTO Livreur (nom_l, prenom_l, email, telephone, mot_de_passe, vehicule) VALUES (:nom, :prenom, :email, :telephone, :password, 'scooter')");
                         $stmt->bindParam(':nom', $nom);
                         $stmt->bindParam(':prenom', $prenom);
+                        $stmt->bindParam(':email', $email);
                         $stmt->bindParam(':telephone', $telephone);
+                        $stmt->bindParam(':password', $hashedPassword); // Utilisez le mot de passe haché
                         $stmt->execute();
                         
                         $success = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';

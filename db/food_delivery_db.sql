@@ -112,7 +112,8 @@ CREATE INDEX idx_produit_categorie ON Produit(id_categorie);
 
 -- Administrateur par défaut
 INSERT INTO Admin (email, password, nom, prenom) 
-VALUES ('admin@fooddelivery.com', 'admin123', 'Admin', 'System');
+VALUES ('admin@fooddelivery.com', '$2y$10$FVVUBQRyYJodfT37fGNGo.j3oGzrSg2eLF1t3HPMU/4aOFiNBK4G2', 'Admin', 'System');
+-- password: admin123
 
 -- Catégories
 INSERT INTO Categorie (nom) VALUES 
@@ -124,40 +125,55 @@ INSERT INTO Categorie (nom) VALUES
 
 -- Exemples de clients
 INSERT INTO Client (nom_c, prenom_c, adresse_c, email, mot_de_passe) VALUES
-('Dupont', 'Pierre', '1 rue de Paris, 75001 Paris', 'pierre.dupont@exemple.com', 'motdepasse123'),
-('Martin', 'Sophie', '23 avenue des Champs-Élysées, 75008 Paris', 'sophie.martin@exemple.com', 'motdepasse123'),
-('Dubois', 'Jean', '5 place de la République, 69001 Lyon', 'jean.dubois@exemple.com', 'motdepasse123');
+('Dupont', 'Pierre', '1 rue de Paris, 75001 Paris', 'pierre.dupont@exemple.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka'),
+('Martin', 'Sophie', '23 avenue des Champs-Élysées, 75008 Paris', 'sophie.martin@exemple.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka'),
+('Dubois', 'Jean', '5 place de la République, 69001 Lyon', 'jean.dubois@exemple.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka');
+-- password: motdepasse123
 
 -- Exemples de restaurants
 INSERT INTO Restaurant (nom_r, adresse_r, description, email, contact) VALUES
-('Burger Palace', '10 rue de la Paix, 75002 Paris', 'Les meilleurs burgers de la ville', 'contact@burgerpalace.com', 'motdepasse123'),
-('Sushi Master', '15 rue du Commerce, 75015 Paris', 'Spécialités de sushi et maki', 'contact@sushimaster.com', 'motdepasse123'),
-('Pasta Fresca', '8 boulevard Saint-Germain, 75006 Paris', 'Pâtes fraîches et pizzas artisanales', 'contact@pastafresca.com', 'motdepasse123');
+('Burger Palace', '10 rue de la Paix, 75002 Paris', 'Les meilleurs burgers de la ville', 'contact@burgerpalace.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka'),
+('Sushi Master', '15 rue du Commerce, 75015 Paris', 'Spécialités de sushi et maki', 'contact@sushimaster.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka'),
+('Pasta Fresca', '8 boulevard Saint-Germain, 75006 Paris', 'Pâtes fraîches et pizzas artisanales', 'contact@pastafresca.com', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka');
+-- password: motdepasse123
 
 -- Exemples de livreurs
 INSERT INTO Livreur (nom_l, prenom_l, email, telephone, mot_de_passe, vehicule) VALUES
-('Leroy', 'Marc', 'marc.leroy@exemple.com', '0612345678', 'motdepasse123', 'scooter'),
-('Bernard', 'Julie', 'julie.bernard@exemple.com', '0687654321', 'motdepasse123', 'velo'),
-('Petit', 'Thomas', 'thomas.petit@exemple.com', '0698765432', 'motdepasse123', 'voiture');
+('Leroy', 'Marc', 'marc.leroy@exemple.com', '0612345678', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka', 'scooter'),
+('Bernard', 'Julie', 'julie.bernard@exemple.com', '0687654321', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka', 'velo'),
+('Petit', 'Thomas', 'thomas.petit@exemple.com', '0698765432', '$2y$10$yCVb.EEcfOnl18MCkIXfHuKVUUK.0JsREtUdXTUZZb40xRnG0/5Ka', 'voiture');
+-- password: motdepasse123
 
 -- Exemples de produits pour le restaurant Burger Palace (id_restaurant = 1)
 INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible) VALUES
 (1, 1, 'Classic Burger', 'Burger classique avec steak, salade, tomate et oignon', 8.50, TRUE),
 (1, 1, 'Cheese Burger', 'Burger avec steak, double fromage, salade et tomate', 9.50, TRUE),
 (1, 1, 'Bacon Burger', 'Burger avec steak, bacon croustillant, fromage et sauce barbecue', 10.50, TRUE),
-(1, 4, 'Milkshake Vanille', 'Milkshake onctueux à la vanille', 4.50, TRUE);
+(1, 4, 'Milkshake Vanille', 'Milkshake onctueux à la vanille', 4.50, TRUE),
+(1, 1, 'Double Cheese', 'Burger avec double steak et triple fromage', 12.50, TRUE),
+(1, 1, 'Veggie Burger', 'Burger végétarien avec galette de légumes', 9.90, TRUE),
+(1, 1, 'Frites Maison', 'Portion de frites fraîches', 3.50, TRUE),
+(1, 4, 'Milkshake Chocolat', 'Milkshake au chocolat belge', 4.50, TRUE);
 
 -- Exemples de produits pour le restaurant Sushi Master (id_restaurant = 2)
 INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible) VALUES
 (2, 2, 'California Roll', 'Rouleau de riz avec avocat, concombre et surimi', 12.00, TRUE),
 (2, 2, 'Sashimi Saumon', 'Tranches fines de saumon frais', 15.00, TRUE),
-(2, 2, 'Maki Concombre', 'Rouleau de riz et concombre enveloppé d\'algue nori', 8.00, TRUE);
+(2, 2, 'Maki Concombre', 'Rouleau de riz et concombre enveloppé d\'algue nori', 8.00, TRUE),
+(2, 2, 'Chirashi Saumon', 'Bol de riz vinaigré avec saumon', 16.50, TRUE),
+(2, 2, 'Plateau Découverte', 'Assortiment de 12 pièces variées', 18.00, TRUE),
+(2, 2, 'Soupe Miso', 'Soupe traditionnelle japonaise', 3.50, TRUE),
+(2, 2, 'Spring Rolls', 'Rouleaux de printemps aux crevettes', 7.50, TRUE);
 
 -- Exemples de produits pour le restaurant Pasta Fresca (id_restaurant = 3)
 INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible) VALUES
 (3, 3, 'Pâtes Carbonara', 'Pâtes fraîches avec sauce carbonara', 13.50, TRUE),
 (3, 3, 'Pizza Margherita', 'Pizza avec tomate, mozzarella et basilic', 11.00, TRUE),
-(3, 3, 'Lasagnes', 'Lasagnes à la bolognaise', 14.50, TRUE);
+(3, 3, 'Lasagnes', 'Lasagnes à la bolognaise', 14.50, TRUE),
+(3, 3, 'Tagliatelles Bolognaise', 'Tagliatelles avec sauce bolognaise maison', 12.00, TRUE),
+(3, 3, 'Pizza Quatre Fromages', 'Pizza avec mozzarella, gorgonzola, parmesan et chèvre', 13.50, TRUE),
+(3, 3, 'Risotto aux Champignons', 'Risotto crémeux aux champignons frais', 14.00, TRUE),
+(3, 3, 'Tiramisu', 'Dessert italien au café et mascarpone', 6.50, TRUE);
 
 -- Exemples de commandes
 INSERT INTO Commande (id_client, id_livreur, statut, date) VALUES
