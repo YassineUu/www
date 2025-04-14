@@ -149,7 +149,11 @@ $categories = getProductCategories($restaurantId);
                 <?php $i++; ?>
                 <div class="product-card" data-category="<?php echo htmlspecialchars($product['id_categorie']); ?>" style="--animation-order: <?php echo $i; ?>">
                     <div class="product-image">
-                        <img src="/assets/images/produit.png" alt="<?php echo htmlspecialchars($product['nom']); ?>">
+                        <?php if (!empty($product['image_url'])): ?>
+                        <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['nom']); ?>" loading="lazy">
+                        <?php else: ?>
+                        <img src="/assets/images/produit.png" alt="<?php echo htmlspecialchars($product['nom']); ?>" loading="lazy">
+                        <?php endif; ?>
                     </div>
                     <div class="product-info">
                         <h3><?php echo htmlspecialchars($product['nom']); ?></h3>

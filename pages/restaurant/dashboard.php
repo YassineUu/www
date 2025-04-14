@@ -160,38 +160,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $categorie = intval($_POST['categorie']);
         $description = trim($_POST['description']);
         $id_restaurant = $restaurantId;
+        $image_url = ''; // Valeur par défaut
         
         // Validation basique
         if (empty($nom) || $prix <= 0 || empty($description) || $categorie <= 0) {
             $productError = 'Veuillez remplir tous les champs correctement.';
         } else {
-            try {
-                $conn = getDbConnection();
+            // Gestion de l'upload d'image
+            if (isset($_FILES['product_image']) && $_FILES['product_image']['size'] > 0) {
+                $image = $_FILES['product_image'];
+                $image_name = $image['name'];
+                $image_tmp = $image['tmp_name'];
+                $image_size = $image['size'];
+                $image_error = $image['error'];
                 
-                $stmt = $conn->prepare("INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible) 
-                                      VALUES (:restaurantId, :categorieId, :nom, :description, :prix, TRUE)");
-                $stmt->bindParam(':restaurantId', $id_restaurant);
-                $stmt->bindParam(':categorieId', $categorie);
-                $stmt->bindParam(':nom', $nom);
-                $stmt->bindParam(':description', $description);
-                $stmt->bindParam(':prix', $prix);
+                // Vérifier l'extension du fichier
+                $image_ext = strtolower(pathinfo($image_name, PATHINFO_EXTENSION));
+                $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
                 
-                $result = $stmt->execute();
-                if ($result) {
-                    $productSuccess = 'Produit ajouté avec succès.';
-                    
-                    // Rafraîchir la liste des produits
-                    $products = getRestaurantProducts($id_restaurant);
-                    $totalProducts = countProducts($id_restaurant);
-                    
-                    // Redirection vers la section produits pour voir le produit ajouté
-                    echo "<script>window.location.href = 'dashboard.php#products';</script>";
+                if (in_array($image_ext, $allowed_extensions)) {
+                    // Vérifier la taille du fichier (max 20MB)
+                    if ($image_size <= 20971520) {
+                        // Créer le dossier d'uploads s'il n'existe pas
+                        $upload_dir = '../../uploads/products/';
+                        if (!is_dir($upload_dir)) {
+                            mkdir($upload_dir, 0777, true);
+                        }
+                        
+                        // Générer un nom de fichier unique
+                        $new_image_name = uniqid('product_') . '.' . $image_ext;
+                        $image_path = $upload_dir . $new_image_name;
+                        
+                        // Déplacer le fichier uploadé
+                        if (move_uploaded_file($image_tmp, $image_path)) {
+                            $image_url = '/uploads/products/' . $new_image_name;
+                        } else {
+                            $productError = 'Erreur lors de l\'upload de l\'image.';
+                        }
+                    } else {
+                        $productError = 'L\'image est trop volumineuse (max 20MB).';
+                    }
                 } else {
-                    $productError = 'Erreur lors de l\'exécution de la requête.';
+                    $productError = 'Extension de fichier non autorisée.';
                 }
-            } catch (PDOException $e) {
-                $productError = 'Erreur lors de l\'ajout du produit: ' . $e->getMessage();
-                error_log("Erreur PDO: " . $e->getMessage());
+            }
+            
+            if (empty($productError)) {
+                try {
+                    $conn = getDbConnection();
+                    
+                    $stmt = $conn->prepare("INSERT INTO Produit (id_restaurant, id_categorie, nom, description, prix, disponible, image_url) 
+                                      VALUES (:restaurantId, :categorieId, :nom, :description, :prix, TRUE, :image_url)");
+                    $stmt->bindParam(':restaurantId', $id_restaurant);
+                    $stmt->bindParam(':categorieId', $categorie);
+                    $stmt->bindParam(':nom', $nom);
+                    $stmt->bindParam(':description', $description);
+                    $stmt->bindParam(':prix', $prix);
+                    $stmt->bindParam(':image_url', $image_url);
+                    
+                    $result = $stmt->execute();
+                    if ($result) {
+                        $productSuccess = 'Produit ajouté avec succès.';
+                        
+                        // Rafraîchir la liste des produits
+                        $products = getRestaurantProducts($id_restaurant);
+                        $totalProducts = countProducts($id_restaurant);
+                        
+                        // Redirection vers la section produits pour voir le produit ajouté
+                        echo "<script>window.location.href = 'dashboard.php#products';</script>";
+                    } else {
+                        $productError = 'Erreur lors de l\'exécution de la requête.';
+                    }
+                } catch (PDOException $e) {
+                    $productError = 'Erreur lors de l\'ajout du produit: ' . $e->getMessage();
+                    error_log("Erreur PDO: " . $e->getMessage());
+                }
             }
         }
     }
@@ -367,6 +410,108 @@ function formatStatus($status) {
     }
 }
 ?>
+
+<style>
+/* Styles pour le tableau des produits */
+.product-thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.product-thumbnail-placeholder {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    color: #aaa;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.product-thumbnail-placeholder i {
+    font-size: 24px;
+}
+
+/* Styles pour les modals */
+.my-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    overflow: auto;
+}
+
+.my-modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+    transform: none !important;
+}
+
+.my-close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 30px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.my-close-modal:hover {
+    color: #333;
+}
+
+/* Boutons dans la modale */
+.delete-confirm-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 25px;
+}
+
+.btn-cancel, .btn-delete {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 120px;
+    text-align: center;
+}
+
+.btn-cancel {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background-color: #d0d0d0;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+</style>
 
 <div class="restaurant-dashboard-container">
     <!-- Sidebar -->
@@ -578,9 +723,9 @@ function formatStatus($status) {
             </div>
             
             <!-- Modal pour changer le statut -->
-            <div id="status-modal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <span class="close-modal">&times;</span>
+            <div id="status-modal" class="my-modal">
+                <div class="my-modal-content">
+                    <span class="my-close-modal">&times;</span>
                     <h2>Modifier le statut de la commande</h2>
                     <form method="POST" action="dashboard.php#orders">
                         <input type="hidden" id="order_id" name="order_id">
@@ -619,6 +764,7 @@ function formatStatus($status) {
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Image</th>
                             <th>Nom</th>
                             <th>Catégorie</th>
                             <th>Prix</th>
@@ -628,12 +774,21 @@ function formatStatus($status) {
                     <tbody>
                         <?php if (count($products) === 0): ?>
                         <tr>
-                            <td colspan="4" style="text-align: center;">Aucun produit trouvé.</td>
+                            <td colspan="5" style="text-align: center;">Aucun produit trouvé.</td>
                         </tr>
                         <?php else: ?>
                         
                         <?php foreach ($products as $product): ?>
                         <tr>
+                            <td>
+                                <?php if (!empty($product['image_url'])): ?>
+                                <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['nom']); ?>" class="product-thumbnail">
+                                <?php else: ?>
+                                <div class="product-thumbnail-placeholder">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo htmlspecialchars($product['nom']); ?></td>
                             <td><?php echo htmlspecialchars($product['nom_categorie']); ?></td>
                             <td><?php echo number_format($product['prix'], 2); ?> €</td>
@@ -642,12 +797,9 @@ function formatStatus($status) {
                                     <a href="#" class="btn-icon edit product-edit-btn" data-product-id="<?php echo $product['id_produit']; ?>">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="POST" action="dashboard.php#products" style="display: inline;">
-                                        <input type="hidden" name="product_id" value="<?php echo $product['id_produit']; ?>">
-                                        <button type="submit" name="delete_product" class="btn-icon delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn-icon delete delete-product-btn" data-product-id="<?php echo $product['id_produit']; ?>" data-product-name="<?php echo htmlspecialchars($product['nom']); ?>">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -681,7 +833,7 @@ function formatStatus($status) {
                 </div>
                 <?php endif; ?>
                 
-                <form method="POST" action="dashboard.php#add-product">
+                <form method="POST" action="dashboard.php#add-product" enctype="multipart/form-data">
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="nom">Nom du produit :</label>
@@ -706,6 +858,12 @@ function formatStatus($status) {
                         <div class="form-group">
                             <label for="description">Description :</label>
                             <textarea name="description" id="description" class="form-control" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="product_image">Image du produit :</label>
+                            <input type="file" name="product_image" id="product_image" class="form-control" accept="image/jpeg, image/png, image/gif">
+                            <small class="form-text text-muted">Formats acceptés: JPEG, PNG, GIF. Taille max: 20MB</small>
                         </div>
                     </div>
                     
@@ -806,8 +964,9 @@ function formatStatus($status) {
 </div>
 
 <!-- Modal de confirmation de suppression -->
-<div id="delete-confirm-modal" class="modal">
-    <div class="modal-content">
+<div id="delete-confirm-modal" class="my-modal">
+    <div class="my-modal-content">
+        <span class="my-close-modal">&times;</span>
         <div class="delete-confirm-content">
             <h2>Confirmer la suppression</h2>
             <p>Êtes-vous sûr de vouloir supprimer ce produit ?</p>
@@ -822,51 +981,115 @@ function formatStatus($status) {
 <?php
 include_once '../../includes/footer.php';
 ?>
+
+<!-- Inclure jQuery s'il n'est pas déjà présent -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function(){
+    // Variables pour stocker l'ID du produit à supprimer
+    var productIdToDelete = null;
+    
+    // Fonction pour ouvrir une modale
+    function openModal(modalId) {
+        $("#" + modalId).css({
+            "display": "block"
+        });
+        $("body").css("overflow", "hidden");
+    }
+    
+    // Fonction pour fermer une modale
+    function closeModal(modalId) {
+        $("#" + modalId).css("display", "none");
+        $("body").css("overflow", "auto");
+    }
+    
+    // Ouvrir la modale de statut
+    $(".order-status-btn").click(function(e){
+        e.preventDefault();
+        
+        var orderId = $(this).data("order-id");
+        var currentStatus = $(this).data("status");
+        
+        $("#order_id").val(orderId);
+        
+        // Sélectionner le statut actuel
+        $("#status option").each(function() {
+            if ($(this).val() === currentStatus) {
+                $(this).prop("selected", true);
+            }
+        });
+        
+        openModal("status-modal");
+    });
+    
+    // Ouvrir la modale de suppression
+    $(".delete-product-btn").click(function(e){
+        e.preventDefault();
+        
+        productIdToDelete = $(this).data("product-id");
+        var productName = $(this).data("product-name");
+        
+        $("#delete-confirm-modal p").text("Êtes-vous sûr de vouloir supprimer \"" + productName + "\" ?");
+        
+        openModal("delete-confirm-modal");
+    });
+    
+    // Fermer les modales avec les boutons X
+    $(".my-close-modal").click(function(){
+        var modal = $(this).closest(".my-modal").attr("id");
+        closeModal(modal);
+    });
+    
+    // Événement pour le bouton Annuler
+    $("#delete-cancel").click(function(){
+        closeModal("delete-confirm-modal");
+    });
+    
+    // Événement pour le bouton Confirmer
+    $("#delete-confirm").click(function(){
+        var form = $("<form>")
+            .attr("method", "POST")
+            .attr("action", "dashboard.php#products");
+        
+        $("<input>")
+            .attr("type", "hidden")
+            .attr("name", "product_id")
+            .attr("value", productIdToDelete)
+            .appendTo(form);
+        
+        $("<input>")
+            .attr("type", "hidden")
+            .attr("name", "delete_product")
+            .attr("value", "1")
+            .appendTo(form);
+        
+        form.appendTo("body").submit();
+    });
+    
+    // Fermer les modales en cliquant à l'extérieur
+    $(window).click(function(e){
+        if ($(e.target).hasClass("my-modal")) {
+            closeModal($(e.target).attr("id"));
+        }
+    });
+    
+    // Éviter la propagation des clics sur le contenu des modales
+    $(".my-modal-content").click(function(e){
+        e.stopPropagation();
+    });
+    
+    // Boutons d'édition de produits
+    $(".product-edit-btn").click(function(e){
+        e.preventDefault();
+        var productId = $(this).data("product-id");
+        window.location.href = "edit_product.php?id=" + productId;
+    });
+});
+</script>
+
+<!-- Fermeture du body et du html si nécessaire -->
 </body>
 </html>
 
-<script>
-// Script pour gérer le comportement de la modal de statut
-document.addEventListener('DOMContentLoaded', function() {
-    // Sélectionner tous les boutons de modification de statut
-    const statusButtons = document.querySelectorAll('.order-status-btn');
-    const modal = document.getElementById('status-modal');
-    const closeModal = document.querySelector('.close-modal');
-    const orderIdInput = document.getElementById('order_id');
-    const statusSelect = document.getElementById('status');
-    
-    // Ouvrir la modal quand on clique sur un bouton de statut
-    statusButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const orderId = this.getAttribute('data-order-id');
-            const currentStatus = this.getAttribute('data-status');
-            
-            // Définir l'ID de commande dans le formulaire
-            orderIdInput.value = orderId;
-            
-            // Sélectionner le statut actuel dans le menu déroulant
-            for (let i = 0; i < statusSelect.options.length; i++) {
-                if (statusSelect.options[i].value === currentStatus) {
-                    statusSelect.selectedIndex = i;
-                    break;
-                }
-            }
-            
-            // Afficher la modal
-            modal.style.display = 'block';
-        });
-    });
-    
-    // Fermer la modal quand on clique sur le X
-    closeModal.addEventListener('click', function() {
-        modal.style.display = 'none';
-    });
-    
-    // Fermer la modal si on clique en dehors
-    window.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-});
-</script> 
+<!-- Inclure jQuery s'il n'est pas déjà présent --> 
