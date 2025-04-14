@@ -2,10 +2,10 @@
 // Démarrer la session
 session_start();
 
-// Effacer toutes les variables de session
+// tims7 l session
 $_SESSION = array();
 
-// Si un cookie de session existe, supprimer le cookie
+// ila kanou chi cookie  ti ms7hom 
 if (isset($_COOKIE[session_name()])) {
     setcookie(session_name(), '', time() - 42000, '/');
 }

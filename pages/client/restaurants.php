@@ -116,7 +116,6 @@ $categories = getCategories();
                 <div class="restaurant-card" data-name="<?php echo strtolower(htmlspecialchars($restaurant['nom_r'])); ?>">
                     <div class="restaurant-image">
                         <img src="/assets/images/restaurant.png" alt="<?php echo htmlspecialchars($restaurant['nom_r']); ?>">
-                        <div class="restaurant-badge"><?php echo $restaurant['product_count']; ?> produits</div>
                     </div>
                     <div class="restaurant-details">
                         <h3 class="restaurant-name"><?php echo htmlspecialchars($restaurant['nom_r']); ?></h3>

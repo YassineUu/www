@@ -48,26 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     
                     if ($user = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                        // Vérifier le mot de passe - d'abord dans le champ password, puis dans contact si password est vide
-                        $passwordVerified = false;
-                        
-                        if (!empty($user['password']) && password_verify($password, $user['password'])) {
-                            $passwordVerified = true;
-                        } elseif (password_verify($password, $user['contact'])) {
-                            $passwordVerified = true;
-                            
-                            // Migration: copier le mot de passe haché de contact vers password
-                            try {
-                                $updateStmt = $conn->prepare("UPDATE Restaurant SET password = :password WHERE id_restaurant = :id");
-                                $updateStmt->bindParam(':password', $user['contact']);
-                                $updateStmt->bindParam(':id', $user['id_restaurant']);
-                                $updateStmt->execute();
-                            } catch (PDOException $e) {
-                                // Ignore les erreurs de migration
-                            }
-                        }
-                        
-                        if ($passwordVerified) {
+
+                        if (password_verify($password, $user['password'])) {
                             $_SESSION['user_id'] = $user['id_restaurant'];
                             $_SESSION['user_name'] = $user['nom_r'];
                             $_SESSION['role'] = 'restaurant';
@@ -108,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     
                     if ($user = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                        // Vérifier le mot de passe
+
                         if (password_verify($password, $user['password'])) {
                             $_SESSION['user_id'] = $user['id_admin'];
                             $_SESSION['user_name'] = $user['prenom'] . ' ' . $user['nom'];
@@ -129,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Récupérer le type d'utilisateur depuis l'URL (si présent)
+
 $userTypeFromURL = isset($_GET['type']) ? $_GET['type'] : 'client';
 ?>
 

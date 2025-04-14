@@ -302,12 +302,6 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.restaurant-name {
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--text-dark);
-    margin-bottom: 5px;
-}
 
 .menu-items {
     list-style: none;

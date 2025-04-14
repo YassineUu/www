@@ -2,7 +2,7 @@
 include_once '../../includes/header.php';
 require_once '../../config/database.php';
 
-// Initialiser les variables
+// hadou variables khawyn
 $error = '';
 $success = '';
 $nom = '';
@@ -11,10 +11,10 @@ $email = '';
 $adresse = '';
 $telephone = '';
 
-// Récupérer le type d'utilisateur depuis l'URL (si présent)
+// hna tan9olo par defaut client howa li aytchjle 
 $userType = isset($_GET['type']) ? $_GET['type'] : 'client';
 
-// Traiter le formulaire d'inscription
+// hna ti yakhd les infos li ti3mro nass mne formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userType = $_POST['user_type'];
     $nom = trim($_POST['nom']);
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $adresse = isset($_POST['adresse']) ? trim($_POST['adresse']) : '';
     $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
     
-    // Validation basique
+    // hna tanchoufo wach dikchi koulo howa hadak 
     if (empty($nom) || empty($email) || empty($password) || empty($confirmPassword)) {
         $error = 'Veuillez remplir tous les champs obligatoires.';
     } elseif ($password !== $confirmPassword) {
@@ -34,15 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Le mot de passe doit contenir au moins 6 caractères.';
     } else {
         try {
+            // l connexion m3a database
             $conn = getDbConnection();
             
-            // Hasher le mot de passe
+            // hna tan criptiw l mot de passe 
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
-            // Déterminer la table et les champs selon le type d'utilisateur
+            // hna tan saybo dikchi 3la 7ssab l'utilisateur ( client, restaurant, livreur )
             switch ($userType) {
                 case 'client':
-                    // Vérifier si l'email existe déjà
+                    // hna tanchoufo wach l'email deja kayn wla la
                     $stmt = $conn->prepare("SELECT * FROM Client WHERE email = :email");
                     $stmt->bindParam(':email', $email);
                     $stmt->execute();
@@ -50,13 +51,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($stmt->rowCount() > 0) {
                         $error = 'Cet email est déjà utilisé.';
                     } else {
-                        // Insérer le nouveau client
+                        // hna tandkhlo l client f base de données
                         $stmt = $conn->prepare("INSERT INTO Client (nom_c, prenom_c, adresse_c, email, mot_de_passe) VALUES (:nom, :prenom, :adresse, :email, :password)");
                         $stmt->bindParam(':nom', $nom);
                         $stmt->bindParam(':prenom', $prenom);
                         $stmt->bindParam(':adresse', $adresse);
                         $stmt->bindParam(':email', $email);
-                        $stmt->bindParam(':password', $hashedPassword); // Utilisez le mot de passe haché
+                        $stmt->bindParam(':password', $hashedPassword);
                         $stmt->execute();
                         
                         $success = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
@@ -64,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                     
                 case 'restaurant':
-                    // Vérifier si l'email existe déjà
+                    
                     $stmt = $conn->prepare("SELECT * FROM Restaurant WHERE email = :email");
                     $stmt->bindParam(':email', $email);
                     $stmt->execute();
@@ -72,26 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($stmt->rowCount() > 0) {
                         $error = 'Cet email est déjà utilisé.';
                     } else {
-                        // Vérifier si le champ password existe dans la table Restaurant
-                        $stmt = $conn->prepare("SHOW COLUMNS FROM Restaurant LIKE 'password'");
-                        $stmt->execute();
                         
-                        // Si le champ n'existe pas, nous l'ajoutons
-                        if ($stmt->rowCount() == 0) {
-                            $stmt = $conn->prepare("ALTER TABLE Restaurant ADD COLUMN password VARCHAR(255) NULL AFTER email");
-                            $stmt->execute();
-                        }
-                        
-                        // Générer un numéro de contact aléatoire pour éviter d'utiliser le mot de passe
                         $contactNumber = '0' . rand(600000000, 799999999);
                         
-                        // Insérer le nouveau restaurant
+
                         $stmt = $conn->prepare("INSERT INTO Restaurant (nom_r, adresse_r, email, contact, password) VALUES (:nom, :adresse, :email, :contact, :password)");
                         $stmt->bindParam(':nom', $nom);
                         $stmt->bindParam(':adresse', $adresse);
                         $stmt->bindParam(':email', $email);
                         $stmt->bindParam(':contact', $contactNumber);
-                        $stmt->bindParam(':password', $hashedPassword); // Utiliser le mot de passe haché dans le champ password
+                        $stmt->bindParam(':password', $hashedPassword);
                         $stmt->execute();
                         
                         $success = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
@@ -99,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                     
                 case 'livreur':
-                    // Vérifier si l'email existe déjà
+
                     $stmt = $conn->prepare("SELECT * FROM Livreur WHERE email = :email");
                     $stmt->bindParam(':email', $email);
                     $stmt->execute();
@@ -107,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($stmt->rowCount() > 0) {
                         $error = 'Cet email est déjà utilisé.';
                     } else {
-                        // Insérer le nouveau livreur
+
                         $stmt = $conn->prepare("INSERT INTO Livreur (nom_l, prenom_l, email, telephone, mot_de_passe, vehicule) VALUES (:nom, :prenom, :email, :telephone, :password, 'scooter')");
                         $stmt->bindParam(':nom', $nom);
                         $stmt->bindParam(':prenom', $prenom);
@@ -130,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
+<!-- hna l msg li ti ban mne b3d l'inscription  -->
 <div class="form-container">
     <h2>Inscription</h2>
     
@@ -139,19 +131,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <?php if (!empty($success)): ?>
         <div class="alert alert-success"><?php echo $success; ?></div>
-        <p>Cliquez <a href="login.php?type=<?php echo $userType; ?>">ici</a> pour vous connecter.</p>
+        <p> <a href="login.php?type=<?php echo $userType; ?>"> Cliquez ici</a> pour vous connecter.</p>
     <?php else: ?>
-    
+    <!-- hna ti dkhlo wache homa client, restaurant, livreur  -->
     <form method="POST" action="">
         <div class="form-group">
             <label for="user_type">Je m'inscris en tant que :</label>
+            <!-- l fonction onchange ="updateForm() hia li tatble l ktabat bin les choix  -->
             <select name="user_type" id="user_type" class="form-control" onchange="updateForm()">
                 <option value="client" <?php echo $userType === 'client' ? 'selected' : ''; ?>>Client</option>
                 <option value="restaurant" <?php echo $userType === 'restaurant' ? 'selected' : ''; ?>>Restaurant</option>
                 <option value="livreur" <?php echo $userType === 'livreur' ? 'selected' : ''; ?>>Livreur</option>
             </select>
         </div>
-        
+        <!-- hna ti dkhlo les info dialhom -->
         <div class="form-group">
             <label for="nom">Nom <?php echo $userType === 'restaurant' ? 'du restaurant' : ''; ?> :</label>
             <input type="text" name="nom" id="nom" class="form-control" value="<?php echo htmlspecialchars($nom); ?>" required>
@@ -208,7 +201,7 @@ function updateForm() {
     const nomLabel = document.querySelector('label[for="nom"]');
     const emailLabel = document.querySelector('label[for="email"]');
     
-    // Afficher/masquer les champs selon le type d'utilisateur
+    // hna ti bdlo l'affichage 3la 7ssab l'utilisateur
     if (userType === 'restaurant') {
         prenomGroup.style.display = 'none';
         telephoneGroup.style.display = 'none';
@@ -230,7 +223,7 @@ function updateForm() {
     }
 }
 
-// Initialiser le formulaire au chargement
+
 document.addEventListener('DOMContentLoaded', updateForm);
 </script>
 
