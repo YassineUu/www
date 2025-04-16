@@ -62,25 +62,6 @@ if (!$commande) {
 
 // Récupérer les produits de la commande
 $products = getCommandeProducts($commandeId);
-
-// Vider le panier local s'il reste des données
-echo "<script>
-    // S'assurer que le panier est bien vidé
-    if (localStorage.getItem('cart')) {
-        localStorage.removeItem('cart');
-        console.log('Panier vidé avec succès');
-    }
-    
-    // Mettre à jour le badge du panier dans le header
-    function updateCartBadge() {
-        const cartCounter = document.querySelector('.cart-counter');
-        if (cartCounter) {
-            cartCounter.textContent = '0';
-            cartCounter.classList.remove('visible');
-        }
-    }
-    updateCartBadge();
-</script>";
 ?>
 
 <div class="container">
@@ -119,7 +100,7 @@ echo "<script>
         </div>
 
         <div class="confirmation-actions">
-            <a href="index.php" class="btn btn-secondary"><i class="fas fa-home"></i> Retour à l'accueil</a>
+            <a href="/index.php" class="btn btn-secondary"><i class="fas fa-home"></i> Retour à l'accueil</a>
             <a href="dashboard.php#orders" class="btn btn-primary"><i class="fas fa-list-ul"></i> Voir mes commandes</a>
         </div>
     </div>
@@ -130,19 +111,7 @@ echo "<script>
 localStorage.removeItem('cart');
 localStorage.removeItem('restaurantInfo');
 
-// Mettre à jour le badge du panier
-function updateCartBadge() {
-    const cartBadge = document.querySelector('.cart-badge');
-    if (cartBadge) {
-        cartBadge.textContent = '0';
-        cartBadge.style.display = 'none';
-    }
-}
 
-// Exécuter après le chargement complet de la page
-document.addEventListener('DOMContentLoaded', function() {
-    updateCartBadge();
-});
 </script>
 
 <?php

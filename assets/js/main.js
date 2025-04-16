@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initAddressForm();
     
     // Quantité des produits
-    initQuantityControls();
 });
 
 // Initialisation des boutons d'ajout au panier
@@ -120,63 +119,3 @@ function initAddressForm() {
         });
     }
 }
-
-// Initialisation des contrôles de quantité
-function initQuantityControls() {
-    const decreaseButtons = document.querySelectorAll('.quantity-decrease');
-    const increaseButtons = document.querySelectorAll('.quantity-increase');
-    
-    decreaseButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const input = this.parentElement.querySelector('.quantity-input');
-            let value = parseInt(input.value);
-            if (value > 1) {
-                input.value = value - 1;
-                updateCartItemTotal(this.closest('.cart-item'));
-            }
-        });
-    });
-    
-    increaseButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const input = this.parentElement.querySelector('.quantity-input');
-            let value = parseInt(input.value);
-            input.value = value + 1;
-            updateCartItemTotal(this.closest('.cart-item'));
-        });
-    });
-}
-
-// Mettre à jour le total d'un article du panier
-function updateCartItemTotal(cartItem) {
-    if (cartItem) {
-        const quantity = parseInt(cartItem.querySelector('.quantity-input').value);
-        const price = parseFloat(cartItem.getAttribute('data-price'));
-        const totalElement = cartItem.querySelector('.cart-item-total');
-        
-        if (totalElement) {
-            totalElement.textContent = (quantity * price).toFixed(2) + ' €';
-        }
-        
-        // Mettre à jour le total du panier
-        updateCartTotal();
-    }
-}
-
-// Mettre à jour le total du panier
-function updateCartTotal() {
-    const cartItems = document.querySelectorAll('.cart-item');
-    const totalElement = document.querySelector('.cart-total-amount');
-    
-    if (totalElement && cartItems.length > 0) {
-        let total = 0;
-        
-        cartItems.forEach(item => {
-            const quantity = parseInt(item.querySelector('.quantity-input').value);
-            const price = parseFloat(item.getAttribute('data-price'));
-            total += quantity * price;
-        });
-        
-        totalElement.textContent = total.toFixed(2) + ' €';
-    }
-} 

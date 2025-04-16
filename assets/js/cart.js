@@ -201,9 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cartItemsInput) {
                 cartItemsInput.value = JSON.stringify(cart);
             }
-            
-            // Mettre à jour le compteur du panier dans l'en-tête
-            updateCartBadge();
+
         }
     }
     
@@ -245,8 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Recharger le panier
             loadCart();
             
-            // Mettre à jour le compteur du panier dans l'en-tête
-            updateCartBadge();
+
         }
     }
     
@@ -266,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result.isConfirmed) {
                     localStorage.removeItem('cart');
                     loadCart();
-                    updateCartBadge();
+
                     Swal.fire(
                         'Vidé !',
                         'Votre panier a été vidé avec succès.',
@@ -278,24 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (confirm("Voulez-vous vraiment vider votre panier ?")) {
                 localStorage.removeItem('cart');
                 loadCart();
-                updateCartBadge();
-            }
-        }
-    }
-    
-    // Mettre à jour le badge du panier dans le header
-    function updateCartBadge() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const cartCounter = document.querySelector('.cart-counter');
-        
-        if (cartCounter) {
-            const cartItems = cart.reduce((total, item) => total + item.quantity, 0);
-            cartCounter.textContent = cartItems;
-            
-            if (cartItems > 0) {
-                cartCounter.classList.add('visible');
-            } else {
-                cartCounter.classList.remove('visible');
             }
         }
     }
