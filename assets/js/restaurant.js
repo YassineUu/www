@@ -97,10 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Mettre à jour le panier dans localStorage
                         localStorage.setItem('cart', JSON.stringify(cart));
-                        
-                        // Mettre à jour le compteur du panier dans le header
-                        updateCartCounter();
-                        
+
                         // Afficher la notification
                         showNotification();
                     }
@@ -135,33 +132,18 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Log pour déboguer
+        console.log("Ajout au panier:", productName, "Panier actuel:", cart);
+        
         // Mettre à jour le panier dans localStorage
         localStorage.setItem('cart', JSON.stringify(cart));
         
-        // Mettre à jour le compteur du panier dans le header
-        updateCartCounter();
-        
+
         // Afficher la notification
         showNotification();
     }
     
-    // Fonction pour mettre à jour le compteur du panier
-    function updateCartCounter() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const cartItems = cart.reduce((total, item) => total + item.quantity, 0);
-        
-        // Mise à jour du compteur dans le header si l'élément existe
-        const cartCounter = document.querySelector('.cart-counter');
-        if (cartCounter) {
-            cartCounter.textContent = cartItems;
-            
-            if (cartItems > 0) {
-                cartCounter.classList.add('visible');
-            } else {
-                cartCounter.classList.remove('visible');
-            }
-        }
-    }
+
     
     // Fonction pour afficher la notification
     function showNotification() {
@@ -178,8 +160,6 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', addToCart);
     });
     
-    // Mettre à jour le compteur au chargement de la page
-    updateCartCounter();
     
     // Animation des cards au scroll
     const productCards = document.querySelectorAll('.product-card');

@@ -1,9 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Vérifier si l'utilisateur est connecté (sera défini dans le HTML)
-    // const isLoggedIn = défini via un attribut data ou une variable PHP
-    
+
     // Initialiser le bouton "Vider le panier"
     const clearCartButton = document.getElementById('clear-cart');
+    
     if (clearCartButton) {
         clearCartButton.addEventListener('click', clearCart);
     }
@@ -87,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="cart-item-quantity">
                     <button class="quantity-decrease">-</button>
-                    <input type="number" class="quantity-input" value="${item.quantity}" min="1" readonly>
+                    <input type="number" class="quantity-input" value="${item.quantity }" min="1" readonly>
                     <button class="quantity-increase">+</button>
                 </div>
                 <div class="cart-item-total">
